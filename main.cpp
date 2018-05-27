@@ -18,13 +18,28 @@
 */
 
 #include "dialogengineupdate.h"
-#include <QApplication>
 #include "engineupdater.h"
 #include "dialogprogress.h"
+#include <QApplication>
+
+//#include "common.h"
+//#include <QDir>
 
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
+
+    /*
+    QJsonDocument json;
+    QJsonObject obj;
+    Common::readOtherJSON(Common::pathCombine(
+                             QDir::currentPath(),
+                             Common::pathCombine("Content", "test.json")),
+                         json);
+    obj = json.object();
+    EngineUpdater updater("");
+    updater.downloadFile(EngineUpdateFileKind::Add, obj);
+    */
 
     if (argc == 1) {
 
@@ -46,7 +61,6 @@ int main(int argc, char *argv[])
                 engineUpdater.start();
                 dialog.exec();
             }
-            return a.exec();
         }
     }
 

@@ -22,6 +22,7 @@
 
 #include <QCoreApplication>
 #include <QJsonObject>
+#include <QJsonArray>
 #include <QNetworkReply>
 #include "engineupdatefilekind.h"
 
@@ -43,7 +44,6 @@ public:
     static const QString jsonFiles;
     static const QString jsonSource;
     static const QString jsonTarget;
-    static const QString jsonTree;
     static const QString jsonOS;
     static const QString jsonWindows;
     static const QString jsonLinux;
@@ -71,7 +71,6 @@ public:
     void download(EngineUpdateFileKind action, QJsonObject& obj);
     void downloadFile(EngineUpdateFileKind action, QJsonObject& obj,
                       bool exe = false);
-    QNetworkReply* readFile(QString source);
     void addFile(QString& source, QString& target, bool exe);
     void removeFile(QString& target);
     void replaceFile(QString& source, QString& target, bool exe);
@@ -84,11 +83,11 @@ public:
     void downloadExecutables();
     void downloadScripts();
     void getVersions(QJsonArray& versions) const;
-    QString getVersionsName() const;
     bool check();
 
 protected:
     QJsonObject m_document;
+    QJsonArray m_versions;
     int m_index;
     QString m_currentVersion;
     QString m_updaterVersion;

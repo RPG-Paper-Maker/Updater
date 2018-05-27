@@ -46,3 +46,27 @@ HEADERS += \
 FORMS += \
     dialogengineupdate.ui \
     ../RPG-Paper-Maker/Dialogs/dialogprogress.ui
+
+#-------------------------------------------------
+# Copy Content directory in build folder
+#-------------------------------------------------
+
+FROM = \"$$shell_path($$PWD\\Content)\"
+DEST = \"$$shell_path($$OUT_PWD)\"
+win32{
+    CONFIG(debug, debug|release) {
+        VARIANT = debug
+    } else {
+        VARIANT = release
+    }
+    DEST = \"$$shell_path($$OUT_PWD\\$$VARIANT\\Content)\"
+    DESTDIR = $$OUT_PWD\\$$VARIANT
+}
+
+!equals(PWD, $${OUT_PWD}) {
+    copyBR.commands = $(COPY_DIR) $$FROM $$DEST
+    first.depends = $(first) copyBR
+    export(first.depends)
+    export(copyBR.commands)
+    QMAKE_EXTRA_TARGETS += first copyBR
+}

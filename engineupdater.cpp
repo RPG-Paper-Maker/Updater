@@ -24,7 +24,6 @@
 #include <QEventLoop>
 #include <QUrl>
 #include <QJsonDocument>
-#include <QJsonArray>
 #include <QDirIterator>
 #include <QMessageBox>
 #include <QThread>
@@ -33,7 +32,6 @@ const QString EngineUpdater::VERSION = "2.0";
 const QString EngineUpdater::jsonFiles = "files";
 const QString EngineUpdater::jsonSource = "source";
 const QString EngineUpdater::jsonTarget = "target";
-const QString EngineUpdater::jsonTree = "tree";
 const QString EngineUpdater::jsonOS = "os";
 const QString EngineUpdater::jsonWindows = "w";
 const QString EngineUpdater::jsonLinux = "l";
@@ -238,29 +236,19 @@ void EngineUpdater::downloadFile(EngineUpdateFileKind action, QJsonObject& obj,
 {
     QString source = obj[jsonSource].toString();
     QString target = obj[jsonTarget].toString();
-    bool onlyFiles = obj.contains(jsonOnlyFiles) ? obj[jsonOnlyFiles].toBool()
-                                                 : false;
-    bool isTree = obj.contains(jsonTree) ? obj[jsonTree].toBool() : false;
 
-    if (isTree) {
-        QNetworkReply* reply = readFile(source);
-        QJsonObject objTree =
-                QJsonDocument::fromJson(reply->readAll()).object();
-        downloadFolder(action, objTree, onlyFiles);
-    }
-    else {
-        if (action == EngineUpdateFileKind::Add)
-            addFile(source, target, exe);
-        else if (action == EngineUpdateFileKind::Remove)
-            removeFile(target);
-        else if (action == EngineUpdateFileKind::Replace)
-            replaceFile(source, target, exe);
-    }
+    if (action == EngineUpdateFileKind::Add)
+        addFile(source, target, exe);
+    else if (action == EngineUpdateFileKind::Remove)
+        removeFile(target);
+    else if (action == EngineUpdateFileKind::Replace)
+        replaceFile(source, target, exe);
 }
 
 // -------------------------------------------------------
 
-QNetworkReply* EngineUpdater::readFile(QString source) {
+void EngineUpdater::addFile(QString& source, QString& target, bool exe) {
+    QString path = Common::pathCombine(QDir::currentPath(), target);
     QNetworkAccessManager manager;
     QNetworkReply* reply;
     QEventLoop loop;
@@ -273,15 +261,6 @@ QNetworkReply* EngineUpdater::readFile(QString source) {
                               "A network error occured: " +
                               reply->errorString());
     }
-
-    return reply;
-}
-
-// -------------------------------------------------------
-
-void EngineUpdater::addFile(QString& source, QString& target, bool exe) {
-    QString path = Common::pathCombine(QDir::currentPath(), target);
-    QNetworkReply* reply = readFile(source);
     QFile file(path);
 
     file.open(QIODevice::WriteOnly);
@@ -412,24 +391,14 @@ void EngineUpdater::downloadExecutables() {
 // -------------------------------------------------------
 
 void EngineUpdater::downloadScripts() {
-    QNetworkReply* reply = readFile(
-                pathGitHub + "RPG-Paper-Maker/master/Trees/system-script.json");
-    QJsonObject objTree = QJsonDocument::fromJson(reply->readAll()).object();
-    downloadFolder(EngineUpdateFileKind::Replace, objTree);
+    //downloadFolder(EngineUpdateFileKind::Replace, objTree);
 }
 
 // -------------------------------------------------------
 
 void EngineUpdater::getVersions(QJsonArray& versions) const {
-    QJsonArray tab = m_document[getVersionsName()].toArray();
-    for (int i = m_index; i < tab.size(); i++)
-        versions.append(tab.at(i));
-}
-
-// -------------------------------------------------------
-
-QString EngineUpdater::getVersionsName() const {
-    return "versions-" + m_updaterVersion;
+    for (int i = m_index; i < m_versions.size(); i++)
+        versions.append(m_versions.at(i));
 }
 
 // -------------------------------------------------------
@@ -452,27 +421,17 @@ bool EngineUpdater::check() {
     }
     m_document = QJsonDocument::fromJson(reply->readAll()).object();
 
-    // For develop
-    /*
-    QJsonDocument json;
-    Common::readOtherJSON(Common::pathCombine(
-                             QDir::currentPath(),
-                             Common::pathCombine("Content", "versions.json")),
-                         json);
-    m_document = json.object();
-    */
-
     // Check last version
     lastVersion = m_document["lastVersion"].toString();
     dif = Common::versionDifferent(lastVersion, m_currentVersion);
 
     // Checking versions index
-    QJsonArray tabVersions = m_document[getVersionsName()].toArray();
+    m_versions = m_document["versions"].toArray();
     QJsonObject obj;
-    m_index = tabVersions.size();
+    m_index = m_versions.size();
     if (m_index != 0) {
-        for (int i = 0; i < tabVersions.size(); i++) {
-            obj = tabVersions.at(i).toObject();
+        for (int i = 0; i < m_versions.size(); i++) {
+            obj = m_versions.at(i).toObject();
             if (Common::versionDifferent(obj["v"].toString(),
                                          m_currentVersion) == 1)
             {
@@ -482,8 +441,7 @@ bool EngineUpdater::check() {
         }
     }
 
-    //return finishedCheck(dif != 0);
-    return false;
+    return dif != 0;
 }
 
 // -------------------------------------------------------
@@ -493,14 +451,13 @@ bool EngineUpdater::check() {
 // -------------------------------------------------------
 
 void EngineUpdater::update() {
-    QJsonArray tabVersions = m_document[getVersionsName()].toArray();
     QJsonObject obj;
 
     // Updating for each versions
-    if (m_index != tabVersions.size()) {
-        int progressVersion = 80 / (tabVersions.size() - m_index);
-        for (int i = m_index; i < tabVersions.size(); i++) {
-            obj = tabVersions.at(i).toObject();
+    if (m_index != m_versions.size()) {
+        int progressVersion = 80 / (m_versions.size() - m_index);
+        for (int i = m_index; i < m_versions.size(); i++) {
+            obj = m_versions.at(i).toObject();
             emit progress(((i - m_index) * progressVersion),
                           "Downloading version " + obj["v"].toString() + "...");
             updateVersion(obj);

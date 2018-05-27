@@ -1,0 +1,4 @@
+{
+	"source": "https://raw.githubusercontent.com/RPG-Paper-Maker/Dependencies/master/Game/win32/d3dcompiler_47.dll",
+    "target": "Content/d3dcompiler_47.dll"
+}
