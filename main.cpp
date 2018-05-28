@@ -22,12 +22,18 @@
 #include "dialogprogress.h"
 #include <QApplication>
 
-//#include "common.h"
-//#include <QDir>
+/*
+#include "common.h"
+#include <QDir>
+#include <QJsonDocument>
+*/
 
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
+    EngineUpdater engineUpdater(argc == 2 ? argv[1] : "");
+
+    //engineUpdater.writeTrees();
 
     /*
     QJsonDocument json;
@@ -37,15 +43,13 @@ int main(int argc, char *argv[])
                              Common::pathCombine("Content", "test.json")),
                          json);
     obj = json.object();
-    EngineUpdater updater("");
-    updater.downloadFile(EngineUpdateFileKind::Add, obj);
+    engineUpdater.downloadFile(EngineUpdateFileKind::Add, obj);
     */
 
     if (argc == 1) {
-
+        engineUpdater.downloadEngine();
     }
     else if (argc == 2) {
-        EngineUpdater engineUpdater(argc == 2 ? argv[1] : "");
         if (engineUpdater.check()) {
             QJsonArray tab;
             engineUpdater.getVersions(tab);
@@ -59,7 +63,7 @@ int main(int argc, char *argv[])
                 progress.connect(&engineUpdater, SIGNAL(needUpdate()),
                                   &engineUpdater, SLOT(update()));
                 engineUpdater.start();
-                dialog.exec();
+                progress.exec();
             }
         }
     }

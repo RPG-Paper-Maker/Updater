@@ -43,6 +43,16 @@ const QString EngineUpdater::jsonReplace = "replace";
 const QString EngineUpdater::gitRepoEngine = "RPG-Paper-Maker";
 const QString EngineUpdater::gitRepoGame = "Game-Scripts";
 const QString EngineUpdater::gitRepoDependencies = "Dependencies";
+const QString EngineUpdater::gitRepoBR = "Basic-Ressources";
+const QString EngineUpdater::jsonScripts = "scripts";
+const QString EngineUpdater::jsonGames = "games";
+const QString EngineUpdater::jsonEngineWin = "engine-win";
+const QString EngineUpdater::jsonEngineLinux = "engine-linux";
+const QString EngineUpdater::jsonEngineMac = "engine-osx";
+const QString EngineUpdater::jsonContent = "content";
+const QString EngineUpdater::jsonBR = "br";
+const QString EngineUpdater::jsonEngineExe = "exeEngine";
+const QString EngineUpdater::jsonGameExe = "exeGame";
 const QString EngineUpdater::pathGitHub =
         "https://raw.githubusercontent.com/RPG-Paper-Maker/";
 
@@ -70,30 +80,57 @@ EngineUpdater::~EngineUpdater()
 // -------------------------------------------------------
 
 void EngineUpdater::writeTrees() {
-    writeTree("Content/Datas/Scripts/System", "system-scripts", gitRepoGame);
-    writeTree("Game/linux/libraries", "game-linux-libraries",
-              gitRepoDependencies);
-    writeTree("Engine/linux/libraries", "engine-linux-libraries",
-              gitRepoDependencies, "libraries");
+    QJsonObject objScripts, objGame, objEngineWin, objEngineLinux, objEngineMac,
+                objContent, objBR, objEngineExe, objGameExe, obj, objTemp;
+    writeTree("Content/Datas/Scripts/System", gitRepoGame,
+              "Engine/Content/Datas/Scripts/System/", objScripts);
+    writeTree("Game", gitRepoDependencies, "Engine/Content/", objGame);
+    writeTree("Engine/win32", gitRepoDependencies, "Engine/", objEngineWin);
+    writeTree("Engine/linux", gitRepoDependencies, "Engine/", objEngineLinux);
+    writeTree("Engine/osx", gitRepoDependencies, "Engine/", objEngineMac);
+    writeTree("Content", gitRepoEngine, "Engine/Content/", objContent);
+    writeTree("Content", gitRepoBR, "Engine/Content/basic/Content", objBR);
+
+    // Exes
+    getJSONExeEngine(objTemp, "win32");
+    objEngineExe["win32"] = objTemp;
+    getJSONExeEngine(objTemp, "linux");
+    objEngineExe["linux"] = objTemp;
+    getJSONExeEngine(objTemp, "osx");
+    objEngineExe["osx"] = objTemp;
+    getJSONExeGame(objTemp, "win32");
+    objGameExe["win32"] = objTemp;
+    getJSONExeGame(objTemp, "linux");
+    objGameExe["linux"] = objTemp;
+    getJSONExeGame(objTemp, "osx");
+    objGameExe["osx"] = objTemp;
+
+    // All
+    obj[jsonScripts] = objScripts;
+    obj[jsonGames] = objGame;
+    obj[jsonEngineWin] = objEngineWin;
+    obj[jsonEngineLinux] = objEngineLinux;
+    obj[jsonEngineMac] = objEngineMac;
+    obj[jsonContent] = objContent;
+    obj[jsonBR] = objBR;
+    obj[jsonEngineExe] = objEngineExe;
+    obj[jsonGameExe] = objGameExe;
+    Common::writeOtherJSON("../RPG-Paper-Maker/trees.json", obj,
+                           QJsonDocument::Indented);
 }
 
 // -------------------------------------------------------
 
-void EngineUpdater::writeTree(QString path, QString fileName, QString gitRepo,
-                              QString targetPath)
+void EngineUpdater::writeTree(QString path, QString gitRepo, QString targetPath,
+                              QJsonObject& objTree)
 {
     QString networkUrl = pathGitHub + gitRepo + "/master/";
     QString localUrl = "../" + gitRepo + "/"; // Only for unix
-    QJsonObject objTree;
-
-    if (gitRepo == gitRepoGame)
-        targetPath = "Content/basic/" + path;
-    if (targetPath.isEmpty())
-        targetPath = path;
 
     getTree(objTree, localUrl, networkUrl, path, targetPath);
-    Common::writeOtherJSON("../RPG-Paper-Maker/Trees/" + fileName + ".json",
-                          objTree, QJsonDocument::Indented);
+
+    if (targetPath == "Engine/")
+        objTree[jsonOnlyFiles] = true;
 }
 
 // -------------------------------------------------------
@@ -156,8 +193,8 @@ void EngineUpdater::getJSONExeEngine(QJsonObject& obj, QString os) {
         exe = "RPG-Paper-Maker.app";
 
     getJSONFile(obj, pathGitHub +
-                "/RPG-Paper-Maker/master/Engine/Dependencies/" +
-                os + "/" + exe, exe);
+                "RPG-Paper-Maker/master/Engine/Dependencies/" +
+                os + "/" + exe, "Engine/" + exe);
 }
 
 // -------------------------------------------------------
@@ -171,7 +208,7 @@ void EngineUpdater::getJSONExeGame(QJsonObject& obj, QString os) {
         exe += ".app";
 
     getJSONFile(obj, pathGitHub +
-                "/RPG-Paper-Maker/master/Engine/Content/" + os + "/" + exe,
+                "RPG-Paper-Maker/master/Engine/Content/" + os + "/" + exe,
                 "Content/" + os + "/" + exe);
 }
 
@@ -404,25 +441,12 @@ void EngineUpdater::getVersions(QJsonArray& versions) const {
 // -------------------------------------------------------
 
 bool EngineUpdater::check() {
-    QNetworkAccessManager manager;
-    QNetworkReply *reply;
-    QEventLoop loop;
     QString lastVersion;
     int dif;
 
-    // Get the JSON
-    reply = manager.get(QNetworkRequest(
-        QUrl(pathGitHub + "RPG-Paper-Maker/master/versions.json")));
-
-    QObject::connect(reply, SIGNAL(finished()), &loop, SLOT(quit()));
-    loop.exec();
-    if (reply->error() != QNetworkReply::NetworkError::NoError) {
-        return false;
-    }
-    m_document = QJsonDocument::fromJson(reply->readAll()).object();
-
     // Check last version
-    lastVersion = m_document["lastVersion"].toString();
+    if (!readDocumentVersion())
+        return false;
     dif = Common::versionDifferent(lastVersion, m_currentVersion);
 
     // Checking versions index
@@ -442,6 +466,44 @@ bool EngineUpdater::check() {
     }
 
     return dif != 0;
+}
+
+// -------------------------------------------------------
+
+void EngineUpdater::downloadEngine() {
+    if (!readDocumentVersion())
+        return;
+}
+
+// -------------------------------------------------------
+
+bool EngineUpdater::readDocumentVersion() {
+    QNetworkAccessManager manager;
+    QNetworkReply *reply;
+    QEventLoop loop;
+
+    // Get the JSON
+    /*
+    reply = manager.get(QNetworkRequest(
+        QUrl(pathGitHub + "RPG-Paper-Maker/master/versions.json")));
+
+    QObject::connect(reply, SIGNAL(finished()), &loop, SLOT(quit()));
+    loop.exec();
+    if (reply->error() != QNetworkReply::NetworkError::NoError) {
+        return false;
+    }
+    m_document = QJsonDocument::fromJson(reply->readAll()).object();
+    */
+    QJsonDocument json;
+    Common::readOtherJSON(Common::pathCombine(
+                             QDir::currentPath(),
+                             "../RPG-Paper-Maker/versions.json"),
+                          json);
+    m_document = json.object();
+
+    m_lastVersion = m_document["lastVersion"].toString();
+
+    return true;
 }
 
 // -------------------------------------------------------

@@ -52,14 +52,24 @@ public:
     static const QString jsonAdd;
     static const QString jsonReplace;
     static const QString jsonRemove;
+    static const QString jsonScripts;
+    static const QString jsonGames;
+    static const QString jsonEngineWin;
+    static const QString jsonEngineLinux;
+    static const QString jsonEngineMac;
+    static const QString jsonContent;
+    static const QString jsonBR;
+    static const QString jsonEngineExe;
+    static const QString jsonGameExe;
     static const QString gitRepoEngine;
     static const QString gitRepoGame;
     static const QString gitRepoDependencies;
+    static const QString gitRepoBR;
     static const QString pathGitHub;
 
     static void writeTrees();
-    static void writeTree(QString path, QString fileName, QString gitRepo,
-                          QString targetPath = QString());
+    static void writeTree(QString path, QString gitRepo, QString targetPath,
+                          QJsonObject &objTree);
     static void getTree(QJsonObject& objTree, QString localUrl,
                         QString networkUrl, QString path, QString targetUrl);
     static void getJSONFile(QJsonObject &obj, QString source, QString target);
@@ -84,12 +94,15 @@ public:
     void downloadScripts();
     void getVersions(QJsonArray& versions) const;
     bool check();
+    void downloadEngine();
+    bool readDocumentVersion();
 
 protected:
     QJsonObject m_document;
     QJsonArray m_versions;
     int m_index;
     QString m_currentVersion;
+    QString m_lastVersion;
     QString m_updaterVersion;
 
 public slots:
