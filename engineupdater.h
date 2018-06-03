@@ -94,7 +94,6 @@ public:
     void downloadScripts();
     void getVersions(QJsonArray& versions) const;
     bool check();
-    void downloadEngine();
     bool readDocumentVersion();
 
 protected:
@@ -106,6 +105,7 @@ protected:
     QString m_updaterVersion;
 
 public slots:
+    void downloadEngine();
     void update();
 
 signals:

@@ -1,4 +1,4 @@
-/*
+﻿/*
     RPG Paper Maker Copyright (C) 2017 Marie Laporte
 
     This file is part of RPG Paper Maker.
@@ -21,6 +21,7 @@
 #include "engineupdater.h"
 #include "dialogprogress.h"
 #include <QApplication>
+#include <QThread>
 
 /*
 #include "common.h"
@@ -32,6 +33,14 @@ int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
     EngineUpdater engineUpdater(argc == 2 ? argv[1] : "");
+    DialogProgress progress;
+    progress.connect(&engineUpdater, SIGNAL(progress(int, QString)),
+                     &progress, SLOT(setValueLabel(int, QString)));
+    progress.connect(&engineUpdater, SIGNAL(finished()),
+                     &progress, SLOT(close()));
+    QThread* thread = new QThread(&progress);
+    engineUpdater.moveToThread(thread);
+
 
     //engineUpdater.writeTrees();
 
@@ -46,8 +55,12 @@ int main(int argc, char *argv[])
     engineUpdater.downloadFile(EngineUpdateFileKind::Add, obj);
     */
 
-    if (argc == 1) {
-        engineUpdater.downloadEngine();
+    if (argc == 1 && engineUpdater.readDocumentVersion()) {
+        engineUpdater.connect(thread, SIGNAL(started()),
+                              &engineUpdater, SLOT(downloadEngine()));
+        thread->start();
+        progress.exec();
+        thread->exit();
     }
     else if (argc == 2) {
         if (engineUpdater.check()) {
@@ -56,14 +69,9 @@ int main(int argc, char *argv[])
 
             DialogEngineUpdate dialog(tab);
             if (dialog.exec() == QDialog::Accepted) {
-                DialogProgress progress;
-                progress.connect(&engineUpdater,
-                                  SIGNAL(progress(int, QString)),
-                                  &progress, SLOT(setValueLabel(int, QString)));
-                progress.connect(&engineUpdater, SIGNAL(needUpdate()),
-                                  &engineUpdater, SLOT(update()));
-                engineUpdater.start();
                 progress.exec();
+                engineUpdater.update();
+                progress.close();
             }
         }
     }

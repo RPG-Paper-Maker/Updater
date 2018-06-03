@@ -46,9 +46,9 @@ const QString EngineUpdater::gitRepoDependencies = "Dependencies";
 const QString EngineUpdater::gitRepoBR = "Basic-Ressources";
 const QString EngineUpdater::jsonScripts = "scripts";
 const QString EngineUpdater::jsonGames = "games";
-const QString EngineUpdater::jsonEngineWin = "engine-win";
-const QString EngineUpdater::jsonEngineLinux = "engine-linux";
-const QString EngineUpdater::jsonEngineMac = "engine-osx";
+const QString EngineUpdater::jsonEngineWin = "engineWin";
+const QString EngineUpdater::jsonEngineLinux = "engineLinux";
+const QString EngineUpdater::jsonEngineMac = "engineOsx";
 const QString EngineUpdater::jsonContent = "content";
 const QString EngineUpdater::jsonBR = "br";
 const QString EngineUpdater::jsonEngineExe = "exeEngine";
@@ -470,17 +470,11 @@ bool EngineUpdater::check() {
 
 // -------------------------------------------------------
 
-void EngineUpdater::downloadEngine() {
-    if (!readDocumentVersion())
-        return;
-}
-
-// -------------------------------------------------------
-
 bool EngineUpdater::readDocumentVersion() {
     QNetworkAccessManager manager;
     QNetworkReply *reply;
     QEventLoop loop;
+    QJsonObject doc;
 
     // Get the JSON
     /*
@@ -499,9 +493,14 @@ bool EngineUpdater::readDocumentVersion() {
                              QDir::currentPath(),
                              "../RPG-Paper-Maker/versions.json"),
                           json);
+    doc = json.object();
+    m_lastVersion = doc["lastVersion"].toString();
+    m_versions = doc["versions"].toArray();
+    Common::readOtherJSON(Common::pathCombine(
+                             QDir::currentPath(),
+                             "../RPG-Paper-Maker/trees.json"),
+                          json);
     m_document = json.object();
-
-    m_lastVersion = m_document["lastVersion"].toString();
 
     return true;
 }
@@ -510,6 +509,33 @@ bool EngineUpdater::readDocumentVersion() {
 //
 //  SLOTS
 //
+// -------------------------------------------------------
+
+void EngineUpdater::downloadEngine() {
+    QThread::sleep(1);
+
+    // Executables
+    emit progress(80, "Downloading all the system scripts...");
+    //downloadScripts();
+    QThread::sleep(1);
+    emit progress(100, "Downloading all the system scripts...");
+
+    QThread::sleep(1);
+    /*
+    // System scripts
+    emit progress(90, "Downloading executables for games and engine...");
+    downloadExecutables();
+    emit progress(100, "Finished!");
+    QThread::sleep(1);
+
+    // Remove updater.json
+    QFile updater(Common::pathCombine(QDir::currentPath(), "updater.json"));
+    if (updater.exists())
+        updater.remove();
+    */
+    emit finished();
+}
+
 // -------------------------------------------------------
 
 void EngineUpdater::update() {
