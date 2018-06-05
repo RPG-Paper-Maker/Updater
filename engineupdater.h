@@ -40,10 +40,13 @@ class EngineUpdater : public QObject
 public:
     EngineUpdater(QString engineVersion);
     virtual ~EngineUpdater();
+    QString messageError() const;
+
     static const QString VERSION;
     static const QString jsonFiles;
     static const QString jsonSource;
     static const QString jsonTarget;
+    static const QString jsonRepo;
     static const QString jsonOS;
     static const QString jsonWindows;
     static const QString jsonLinux;
@@ -70,25 +73,30 @@ public:
     static void writeTrees();
     static void writeTree(QString path, QString gitRepo, QString targetPath,
                           QJsonObject &objTree);
-    static void getTree(QJsonObject& objTree, QString localUrl,
-                        QString networkUrl, QString path, QString targetUrl);
-    static void getJSONFile(QJsonObject &obj, QString source, QString target);
+    static void getTree(QJsonObject& objTree, QString localUrl, QString path,
+                        QString targetUrl, QString repo);
+    static void getJSONFile(QJsonObject &obj, QString source, QString target,
+                            QString repo);
     static void getJSONDir(QJsonObject &obj, QJsonArray& files, QString target);
     static void getJSONExeEngine(QJsonObject &obj, QString os);
     static void getJSONExeGame(QJsonObject &obj, QString os);
     void start();
     void updateVersion(QJsonObject& obj);
-    void download(EngineUpdateFileKind action, QJsonObject& obj);
-    void downloadFile(EngineUpdateFileKind action, QJsonObject& obj,
-                      bool exe = false);
-    void addFile(QString& source, QString& target, bool exe);
+    bool download(EngineUpdateFileKind action, QJsonObject& obj,
+                  QString& version);
+    bool downloadFile(EngineUpdateFileKind action, QJsonObject& obj,
+                      QString &version, bool exe = false);
+    bool addFile(QString& source, QString& target, QString &repo,
+                 QString &version, bool exe);
     void removeFile(QString& target);
-    void replaceFile(QString& source, QString& target, bool exe);
-    void downloadFolder(EngineUpdateFileKind action, QJsonObject& obj,
-                        bool onlyFiles = false);
-    void addFolder(QString& target, QJsonArray& files, bool onlyFiles = false);
+    bool replaceFile(QString& source, QString& target, QString &repo,
+                     QString &version, bool exe);
+    bool downloadFolder(EngineUpdateFileKind action, QJsonObject& obj,
+                        QString &version, bool onlyFiles = false);
+    bool addFolder(QString& target, QJsonArray& files, QString &version,
+                   bool onlyFiles = false);
     void removeFolder(QString& target, bool onlyFiles = false);
-    void replaceFolder(QString& target, QJsonArray& files,
+    bool replaceFolder(QString& target, QJsonArray& files, QString& version,
                        bool onlyFiles = false);
     void downloadExecutables();
     void downloadScripts();
@@ -103,6 +111,7 @@ protected:
     QString m_currentVersion;
     QString m_lastVersion;
     QString m_updaterVersion;
+    QString m_messageError;
 
 public slots:
     void downloadEngine();
@@ -112,7 +121,6 @@ signals:
     void progress(int, QString);
     void finishedCheck(bool);
     void needUpdate();
-    void finished();
 };
 
 #endif // ENGINEUPDATER_H

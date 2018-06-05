@@ -22,6 +22,8 @@
 #include "dialogprogress.h"
 #include <QApplication>
 #include <QThread>
+#include <QTimer>
+#include <QMessageBox>
 
 /*
 #include "common.h"
@@ -33,38 +35,19 @@ int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
     EngineUpdater engineUpdater(argc == 2 ? argv[1] : "");
-    DialogProgress progress;
-    progress.connect(&engineUpdater, SIGNAL(progress(int, QString)),
-                     &progress, SLOT(setValueLabel(int, QString)));
-    progress.connect(&engineUpdater, SIGNAL(finished()),
-                     &progress, SLOT(close()));
-    QThread* thread = new QThread(&progress);
-    engineUpdater.moveToThread(thread);
 
+    DialogEngineUpdate dialog(engineUpdater);
+    engineUpdater.readDocumentVersion();
 
     //engineUpdater.writeTrees();
 
-    /*
-    QJsonDocument json;
-    QJsonObject obj;
-    Common::readOtherJSON(Common::pathCombine(
-                             QDir::currentPath(),
-                             Common::pathCombine("Content", "test.json")),
-                         json);
-    obj = json.object();
-    engineUpdater.downloadFile(EngineUpdateFileKind::Add, obj);
-    */
-
-    if (argc == 1 && engineUpdater.readDocumentVersion()) {
-        engineUpdater.connect(thread, SIGNAL(started()),
-                              &engineUpdater, SLOT(downloadEngine()));
-        thread->start();
-        progress.exec();
-        thread->exit();
+    if (argc == 1) {
+        dialog.updateLabel("You can download the newest version of the engine. "
+                           "Would you like to continue?");
     }
     else if (argc == 2) {
+        /*
         if (engineUpdater.check()) {
-            QJsonArray tab;
             engineUpdater.getVersions(tab);
 
             DialogEngineUpdate dialog(tab);
@@ -73,8 +56,9 @@ int main(int argc, char *argv[])
                 engineUpdater.update();
                 progress.close();
             }
-        }
+        }*/
     }
+    dialog.show();
 
-    return 0;
+    return a.exec();
 }

@@ -22,6 +22,8 @@
 
 #include <QDialog>
 #include <QJsonArray>
+#include <dialogprogress.h>
+#include "engineupdater.h"
 
 // -------------------------------------------------------
 //
@@ -40,11 +42,19 @@ class DialogEngineUpdate : public QDialog
     Q_OBJECT
 
 public:
-    explicit DialogEngineUpdate(QJsonArray &array, QWidget *parent = 0);
+    explicit DialogEngineUpdate(EngineUpdater& enginUpdater,
+                                QWidget *parent = 0);
     ~DialogEngineUpdate();
+    void updateReleaseText(QJsonArray& tab);
+    void updateLabel(QString label);
 
 private:
     Ui::DialogEngineUpdate *ui;
+    EngineUpdater& m_engineUpdater;
+    DialogProgress m_progress;
+
+public slots:
+    virtual void accept();
 };
 
 #endif // DIALOGENGINEUPDATE_H

@@ -20,6 +20,8 @@
 
 #include "dialogengineupdate.h"
 #include "ui_dialogengineupdate.h"
+#include <QThread>
+#include <QMessageBox>
 
 // -------------------------------------------------------
 //
@@ -27,15 +29,53 @@
 //
 // -------------------------------------------------------
 
-DialogEngineUpdate::DialogEngineUpdate(QJsonArray &array, QWidget *parent) :
+DialogEngineUpdate::DialogEngineUpdate(EngineUpdater &engineUpdater,
+                                       QWidget *parent) :
     QDialog(parent),
-    ui(new Ui::DialogEngineUpdate)
+    ui(new Ui::DialogEngineUpdate),
+    m_engineUpdater(engineUpdater)
 {
     ui->setupUi(this);
-    ui->widgetReleaseNotes->updateText(array);
+    m_progress.connect(&m_engineUpdater, SIGNAL(progress(int, QString)),
+                       &m_progress, SLOT(setValueLabel(int, QString)));
 }
 
 DialogEngineUpdate::~DialogEngineUpdate()
 {
     delete ui;
+}
+
+// -------------------------------------------------------
+//
+//  INTERMEDIARY FUNCTIONS
+//
+// -------------------------------------------------------
+
+void DialogEngineUpdate::updateReleaseText(QJsonArray& tab) {
+    ui->widgetReleaseNotes->updateText(tab);
+}
+
+// -------------------------------------------------------
+
+void DialogEngineUpdate::updateLabel(QString label) {
+    ui->label->setText(label);
+}
+
+// -------------------------------------------------------
+//
+//  SLOTS
+//
+// -------------------------------------------------------
+
+void DialogEngineUpdate::accept() {
+    this->hide();
+    m_progress.show();
+    m_engineUpdater.downloadEngine();
+    if (!m_engineUpdater.messageError().isEmpty())
+        QMessageBox::critical(this, "Error", m_engineUpdater.messageError());
+    else
+        QMessageBox::information(this, "Done!", "Download finished correctly!");
+    m_progress.close();
+
+    QDialog::accept();
 }
