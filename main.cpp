@@ -44,21 +44,16 @@ int main(int argc, char *argv[])
     if (argc == 1) {
         dialog.updateLabel("You can download the newest version of the engine. "
                            "Would you like to continue?");
+        dialog.show();
     }
     else if (argc == 2) {
-        /*
         if (engineUpdater.check()) {
+            QJsonArray tab;
             engineUpdater.getVersions(tab);
-
-            DialogEngineUpdate dialog(tab);
-            if (dialog.exec() == QDialog::Accepted) {
-                progress.exec();
-                engineUpdater.update();
-                progress.close();
-            }
-        }*/
+            dialog.updateReleaseText(tab);
+            dialog.show();
+        }
     }
-    dialog.show();
 
     return a.exec();
 }

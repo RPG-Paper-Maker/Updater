@@ -194,8 +194,8 @@ void EngineUpdater::getJSONExeEngine(QJsonObject& obj, QString os) {
     else
         exe = "RPG-Paper-Maker.app";
 
-    getJSONFile(obj, "Engine/Dependencies/" + os + "/" + exe, "../Engine/" +
-                exe, "RPG-Paper-Maker");
+    getJSONFile(obj, "Engine/" + os + "/" + exe, "../Engine/" +
+                exe, "Dependencies");
 }
 
 // -------------------------------------------------------
@@ -208,8 +208,8 @@ void EngineUpdater::getJSONExeGame(QJsonObject& obj, QString os) {
     else if (os == "osx")
         exe += ".app";
 
-    getJSONFile(obj, "Engine/Content/" + os + "/" + exe, "Content/" + os + "/" +
-                exe, "RPG-Paper-Maker");
+    getJSONFile(obj, "Game/" + os + "/" + exe, "../Engine/Content/" + os + "/" +
+                exe, "Dependencies");
 }
 
 // -------------------------------------------------------
@@ -220,7 +220,7 @@ void EngineUpdater::start() {
 
 // -------------------------------------------------------
 
-void EngineUpdater::updateVersion(QJsonObject& obj) {
+void EngineUpdater::updateVersion(QJsonObject& obj, QString& version) {
     QJsonArray tabAdd =
           obj.contains(jsonAdd) ? obj[jsonAdd].toArray() : QJsonArray();
     QJsonArray tabRemove =
@@ -228,20 +228,18 @@ void EngineUpdater::updateVersion(QJsonObject& obj) {
     QJsonArray tabReplace =
           obj.contains(jsonReplace) ? obj[jsonReplace].toArray() : QJsonArray();
     QJsonObject objFile;
-    /*
     for (int i = 0; i < tabAdd.size(); i++) {
         objFile = tabAdd.at(i).toObject();
-        download(EngineUpdateFileKind::Add, objFile);
+        download(EngineUpdateFileKind::Add, objFile, version);
     }
     for (int i = 0; i < tabRemove.size(); i++) {
         objFile = tabRemove.at(i).toObject();
-        download(EngineUpdateFileKind::Remove, objFile);
+        download(EngineUpdateFileKind::Remove, objFile, version);
     }
     for (int i = 0; i < tabReplace.size(); i++) {
         objFile = tabReplace.at(i).toObject();
-        download(EngineUpdateFileKind::Replace, objFile);
+        download(EngineUpdateFileKind::Replace, objFile, version);
     }
-    */
 }
 
 // -------------------------------------------------------
@@ -419,19 +417,21 @@ bool EngineUpdater::replaceFolder(QString& target, QJsonArray &files,
 // -------------------------------------------------------
 
 void EngineUpdater::downloadExecutables() {
-    QString version = "v-" + m_lastVersion + "-beta";
 
     // Games
-    QJsonObject objGame = m_document["exeGame"].toObject();
+    QJsonObject objGame = m_document[jsonGameExe].toObject();
     QJsonObject objGameWin32 = objGame["win32"].toObject();
     QJsonObject objGameLinux = objGame["linux"].toObject();
     QJsonObject objGameOsx = objGame["osx"].toObject();
-    downloadFile(EngineUpdateFileKind::Replace, objGameWin32, version, true);
-    downloadFile(EngineUpdateFileKind::Replace, objGameLinux, version, true);
-    downloadFile(EngineUpdateFileKind::Replace, objGameOsx, version, true);
+    downloadFile(EngineUpdateFileKind::Replace, objGameWin32, m_lastVersion,
+                 true);
+    downloadFile(EngineUpdateFileKind::Replace, objGameLinux, m_lastVersion,
+                 true);
+    downloadFile(EngineUpdateFileKind::Replace, objGameOsx, m_lastVersion,
+                 true);
 
     // Engine
-    QJsonObject objEngine = m_document["exeEngine"].toObject();
+    QJsonObject objEngine = m_document[jsonEngineExe].toObject();
     QJsonObject objEngineExe;
     QString strOS = "";
     #ifdef Q_OS_WIN
@@ -442,13 +442,15 @@ void EngineUpdater::downloadExecutables() {
         strOS = "osx";
     #endif
     objEngineExe = objEngine[strOS].toObject();
-    downloadFile(EngineUpdateFileKind::Replace, objEngineExe, version, true);
+    downloadFile(EngineUpdateFileKind::Replace, objEngineExe, m_lastVersion,
+                 true);
 }
 
 // -------------------------------------------------------
 
-void EngineUpdater::downloadScripts() {
-    //downloadFolder(EngineUpdateFileKind::Replace, objTree);
+bool EngineUpdater::downloadScripts() {
+    QJsonObject obj = m_document[jsonBR].toObject();
+    return downloadFolder(EngineUpdateFileKind::Add, obj, m_lastVersion);
 }
 
 // -------------------------------------------------------
@@ -460,17 +462,15 @@ void EngineUpdater::getVersions(QJsonArray& versions) const {
 
 // -------------------------------------------------------
 
-bool EngineUpdater::check() {
-    QString lastVersion;
+bool EngineUpdater::check(QString version) {
     int dif;
 
     // Check last version
     if (!readDocumentVersion())
         return false;
-    dif = Common::versionDifferent(lastVersion, m_currentVersion);
+    dif = Common::versionDifferent(m_lastVersion, m_currentVersion);
 
     // Checking versions index
-    m_versions = m_document["versions"].toArray();
     QJsonObject obj;
     m_index = m_versions.size();
     if (m_index != 0) {
@@ -499,7 +499,31 @@ bool EngineUpdater::readDocumentVersion() {
     // Get the JSON
     /*
     reply = manager.get(QNetworkRequest(
-        QUrl(https + pathGitHub + "RPG-Paper-Maker/master/versions.json")));
+        QUrl(pathGitHub + "RPG-Paper-Maker/master/versions.json")));
+
+    QObject::connect(reply, SIGNAL(finished()), &loop, SLOT(quit()));
+    loop.exec();
+    if (reply->error() != QNetworkReply::NetworkError::NoError) {
+        return false;
+    }
+    doc = QJsonDocument::fromJson(reply->readAll()).object();
+    */
+
+    QJsonDocument json;
+    Common::readOtherJSON(Common::pathCombine(
+                             QDir::currentPath(),
+                             "../RPG-Paper-Maker/versions.json"),
+                          json);
+    doc = json.object();
+
+    // -----------
+
+    m_lastVersion = doc["lastVersion"].toString();
+    m_versions = doc["versions"].toArray();
+
+    /*
+    reply = manager.get(QNetworkRequest(
+        QUrl(pathGitHub + "RPG-Paper-Maker/master/trees.json")));
 
     QObject::connect(reply, SIGNAL(finished()), &loop, SLOT(quit()));
     loop.exec();
@@ -509,19 +533,13 @@ bool EngineUpdater::readDocumentVersion() {
     m_document = QJsonDocument::fromJson(reply->readAll()).object();
     */
 
-    QJsonDocument json;
-    Common::readOtherJSON(Common::pathCombine(
-                             QDir::currentPath(),
-                             "../RPG-Paper-Maker/versions.json"),
-                          json);
-    doc = json.object();
-    m_lastVersion = doc["lastVersion"].toString();
-    m_versions = doc["versions"].toArray();
     Common::readOtherJSON(Common::pathCombine(
                              QDir::currentPath(),
                              "../RPG-Paper-Maker/trees.json"),
                           json);
     m_document = json.object();
+
+    // -----------
 
     return true;
 }
@@ -534,18 +552,16 @@ bool EngineUpdater::readDocumentVersion() {
 
 void EngineUpdater::downloadEngine() {
     QJsonObject obj;
-    QString version = "v-" + m_lastVersion + "-beta";
     QDir dir;
 
     // Executables
     emit progress(0, "Creating content folder...");
     dir.mkdir("../Engine");
     obj = m_document[jsonContent].toObject();
-    if (!downloadFolder(EngineUpdateFileKind::Add, obj, version))
+    if (!downloadFolder(EngineUpdateFileKind::Add, obj, m_lastVersion))
         return;
     emit progress(5, "Downloading Basic Ressources...");
-    obj = m_document[jsonBR].toObject();
-    if (!downloadFolder(EngineUpdateFileKind::Add, obj, version))
+    if (!downloadScripts())
         return;
     emit progress(10, "Downloading System scripts...");
     dir.mkdir("../Engine/Content/basic/Content/Datas/Scripts");
@@ -556,11 +572,11 @@ void EngineUpdater::downloadEngine() {
     include.write("");
     include.close();
     obj = m_document[jsonScripts].toObject();
-    if (!downloadFolder(EngineUpdateFileKind::Add, obj, version))
+    if (!downloadFolder(EngineUpdateFileKind::Add, obj, m_lastVersion))
         return;
     emit progress(15, "Downloading games dependencies...");
     obj = m_document[jsonGames].toObject();
-    if (!downloadFolder(EngineUpdateFileKind::Add, obj, version))
+    if (!downloadFolder(EngineUpdateFileKind::Add, obj, m_lastVersion))
         return;
     emit progress(80, "Downloading engine dependencies...");
     #ifdef Q_OS_WIN
@@ -570,7 +586,7 @@ void EngineUpdater::downloadEngine() {
     #else
         obj = m_document[jsonEngineMac].toObject();
     #endif
-    if (!downloadFolder(EngineUpdateFileKind::Add, obj, version))
+    if (!downloadFolder(EngineUpdateFileKind::Add, obj, m_lastVersion))
         return;
     QFile("../RPG-Paper-Maker").remove();
     QFile::link("../Engine/RPG-Paper-Maker", "../RPG-Paper-Maker");
@@ -583,15 +599,17 @@ void EngineUpdater::downloadEngine() {
 
 void EngineUpdater::update() {
     QJsonObject obj;
+    QString version;
 
     // Updating for each versions
     if (m_index != m_versions.size()) {
         int progressVersion = 80 / (m_versions.size() - m_index);
         for (int i = m_index; i < m_versions.size(); i++) {
             obj = m_versions.at(i).toObject();
+            version = obj["v"].toString();
             emit progress(((i - m_index) * progressVersion),
-                          "Downloading version " + obj["v"].toString() + "...");
-            updateVersion(obj);
+                          "Downloading version " + version + "...");
+            updateVersion(obj, version);
             QThread::sleep(1);
         }
     }
@@ -605,9 +623,4 @@ void EngineUpdater::update() {
     downloadExecutables();
     emit progress(100, "Finished!");
     QThread::sleep(1);
-
-    // Remove updater.json
-    QFile updater(Common::pathCombine(QDir::currentPath(), "updater.json"));
-    if (updater.exists())
-        updater.remove();
 }

@@ -33,7 +33,8 @@ DialogEngineUpdate::DialogEngineUpdate(EngineUpdater &engineUpdater,
                                        QWidget *parent) :
     QDialog(parent),
     ui(new Ui::DialogEngineUpdate),
-    m_engineUpdater(engineUpdater)
+    m_engineUpdater(engineUpdater),
+    m_update(false)
 {
     ui->setupUi(this);
     m_progress.connect(&m_engineUpdater, SIGNAL(progress(int, QString)),
@@ -53,6 +54,7 @@ DialogEngineUpdate::~DialogEngineUpdate()
 
 void DialogEngineUpdate::updateReleaseText(QJsonArray& tab) {
     ui->widgetReleaseNotes->updateText(tab);
+    m_update = true;
 }
 
 // -------------------------------------------------------
@@ -70,7 +72,10 @@ void DialogEngineUpdate::updateLabel(QString label) {
 void DialogEngineUpdate::accept() {
     this->hide();
     m_progress.show();
-    m_engineUpdater.downloadEngine();
+    if (m_update)
+        m_engineUpdater.update();
+    else
+        m_engineUpdater.downloadEngine();
     if (!m_engineUpdater.messageError().isEmpty())
         QMessageBox::critical(this, "Error", m_engineUpdater.messageError());
     else

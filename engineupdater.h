@@ -81,7 +81,7 @@ public:
     static void getJSONExeEngine(QJsonObject &obj, QString os);
     static void getJSONExeGame(QJsonObject &obj, QString os);
     void start();
-    void updateVersion(QJsonObject& obj);
+    void updateVersion(QJsonObject& obj, QString &version);
     bool download(EngineUpdateFileKind action, QJsonObject& obj,
                   QString& version);
     bool downloadFile(EngineUpdateFileKind action, QJsonObject& obj,
@@ -99,7 +99,7 @@ public:
     bool replaceFolder(QString& target, QJsonArray& files, QString& version,
                        bool onlyFiles = false);
     void downloadExecutables();
-    void downloadScripts();
+    bool downloadScripts();
     void getVersions(QJsonArray& versions) const;
     bool check();
     bool readDocumentVersion();

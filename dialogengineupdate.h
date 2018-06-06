@@ -52,6 +52,7 @@ private:
     Ui::DialogEngineUpdate *ui;
     EngineUpdater& m_engineUpdater;
     DialogProgress m_progress;
+    bool m_update;
 
 public slots:
     virtual void accept();
