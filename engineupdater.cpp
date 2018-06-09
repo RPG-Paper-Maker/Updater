@@ -26,6 +26,7 @@
 #include <QJsonDocument>
 #include <QDirIterator>
 #include <QThread>
+#include <QProcess>
 
 const QString EngineUpdater::VERSION = "2.0";
 const QString EngineUpdater::jsonFiles = "files";
@@ -62,10 +63,17 @@ const QString EngineUpdater::pathGitHub =
 //
 // -------------------------------------------------------
 
-EngineUpdater::EngineUpdater(QString engineVersion) :
-    m_currentVersion(engineVersion)
+EngineUpdater::EngineUpdater()
 {
-
+    QDir bin(QDir::currentPath());
+    bin.cdUp();
+    QString path = Common::pathCombine(Common::pathCombine(
+                   bin.absolutePath(), "Engine"), "version.json");
+    if (QFile(path).exists()) {
+        QJsonDocument doc;
+        Common::readOtherJSON(path, doc);
+        m_currentVersion = doc.object()["v"].toString();
+    }
 }
 
 EngineUpdater::~EngineUpdater()
@@ -79,6 +87,41 @@ QString EngineUpdater::messageError() const { return m_messageError; }
 //
 //  INTERMEDIARY FUNCTIONS
 //
+// -------------------------------------------------------
+
+void EngineUpdater::startEngineProcess() {
+    QDir bin(QDir::currentPath());
+    bin.cdUp();
+    QString path = Common::pathCombine(bin.absolutePath(), "Engine");
+    QString exe;
+    #ifdef Q_OS_WIN
+        exe = "RPG Paper Maker.exe";
+    #elif __linux__
+        exe = "run.sh";
+    #else
+        exe = "run.sh";
+    #endif
+    path = Common::pathCombine(path, exe);
+    QStringList arguments;
+    arguments.append(path);
+    QProcess::startDetached(path, arguments);
+}
+
+// -------------------------------------------------------
+
+bool EngineUpdater::isNeedUpdate() {
+    QDir bin(QDir::currentPath());
+    bin.cdUp();
+    QString path = Common::pathCombine(Common::pathCombine(Common::pathCombine(
+                   bin.absolutePath(), "Engine"), "Content"),
+                   "engineSettings.json");
+    QJsonDocument doc;
+    Common::readOtherJSON(path, doc);
+    QJsonObject obj = doc.object();
+
+    return obj.contains("updater") ? obj["updater"].toBool() : true;
+}
+
 // -------------------------------------------------------
 
 void EngineUpdater::writeTrees() {
@@ -210,6 +253,13 @@ void EngineUpdater::getJSONExeGame(QJsonObject& obj, QString os) {
 
     getJSONFile(obj, "Game/" + os + "/" + exe, "../Engine/Content/" + os + "/" +
                 exe, "Dependencies");
+}
+
+// -------------------------------------------------------
+
+
+bool EngineUpdater::hasVersion() const {
+    return !m_currentVersion.isEmpty();
 }
 
 // -------------------------------------------------------
@@ -462,7 +512,7 @@ void EngineUpdater::getVersions(QJsonArray& versions) const {
 
 // -------------------------------------------------------
 
-bool EngineUpdater::check(QString version) {
+bool EngineUpdater::check() {
     int dif;
 
     // Check last version

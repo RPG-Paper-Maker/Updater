@@ -56,6 +56,7 @@ private:
 
 public slots:
     virtual void accept();
+    virtual void reject();
 };
 
 #endif // DIALOGENGINEUPDATE_H

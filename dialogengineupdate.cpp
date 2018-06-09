@@ -20,7 +20,6 @@
 
 #include "dialogengineupdate.h"
 #include "ui_dialogengineupdate.h"
-#include <QThread>
 #include <QMessageBox>
 
 // -------------------------------------------------------
@@ -37,6 +36,8 @@ DialogEngineUpdate::DialogEngineUpdate(EngineUpdater &engineUpdater,
     m_update(false)
 {
     ui->setupUi(this);
+    setFixedSize(geometry().width(), geometry().height());
+
     m_progress.connect(&m_engineUpdater, SIGNAL(progress(int, QString)),
                        &m_progress, SLOT(setValueLabel(int, QString)));
 }
@@ -61,6 +62,8 @@ void DialogEngineUpdate::updateReleaseText(QJsonArray& tab) {
 
 void DialogEngineUpdate::updateLabel(QString label) {
     ui->label->setText(label);
+    ui->scrollArea->hide();
+    setFixedSize(geometry().width(), geometry().height() - 300);
 }
 
 // -------------------------------------------------------
@@ -81,6 +84,14 @@ void DialogEngineUpdate::accept() {
     else
         QMessageBox::information(this, "Done!", "Download finished correctly!");
     m_progress.close();
+    EngineUpdater::startEngineProcess();
 
     QDialog::accept();
+}
+
+void DialogEngineUpdate::reject() {
+    this->hide();
+    EngineUpdater::startEngineProcess();
+
+    QDialog::reject();
 }

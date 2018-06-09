@@ -38,7 +38,7 @@ class EngineUpdater : public QObject
 {
     Q_OBJECT
 public:
-    EngineUpdater(QString engineVersion);
+    EngineUpdater();
     virtual ~EngineUpdater();
     QString messageError() const;
 
@@ -70,6 +70,8 @@ public:
     static const QString gitRepoBR;
     static const QString pathGitHub;
 
+    static void startEngineProcess();
+    static bool isNeedUpdate();
     static void writeTrees();
     static void writeTree(QString path, QString gitRepo, QString targetPath,
                           QJsonObject &objTree);
@@ -80,6 +82,7 @@ public:
     static void getJSONDir(QJsonObject &obj, QJsonArray& files, QString target);
     static void getJSONExeEngine(QJsonObject &obj, QString os);
     static void getJSONExeGame(QJsonObject &obj, QString os);
+    bool hasVersion() const;
     void start();
     void updateVersion(QJsonObject& obj, QString &version);
     bool download(EngineUpdateFileKind action, QJsonObject& obj,

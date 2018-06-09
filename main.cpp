@@ -24,6 +24,7 @@
 #include <QThread>
 #include <QTimer>
 #include <QMessageBox>
+#include <QDir>
 
 /*
 #include "common.h"
@@ -34,25 +35,36 @@
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
-    EngineUpdater engineUpdater(argc == 2 ? argv[1] : "");
 
+    // The application can now be used even if called from another directory
+    QDir bin(qApp->applicationDirPath());
+    #ifdef Q_OS_MAC
+        bin.cdUp();
+        bin.cdUp();
+        bin.cdUp();
+    #endif
+    QDir::setCurrent(bin.absolutePath());
+
+    EngineUpdater engineUpdater;
     DialogEngineUpdate dialog(engineUpdater);
     engineUpdater.readDocumentVersion();
 
     //engineUpdater.writeTrees();
 
-    if (argc == 1) {
-        dialog.updateLabel("You can download the newest version of the engine. "
-                           "Would you like to continue?");
-        dialog.show();
-    }
-    else if (argc == 2) {
-        if (engineUpdater.check()) {
+    if (engineUpdater.hasVersion()) {
+        if (EngineUpdater::isNeedUpdate() && engineUpdater.check()) {
             QJsonArray tab;
             engineUpdater.getVersions(tab);
             dialog.updateReleaseText(tab);
             dialog.show();
         }
+        else
+            EngineUpdater::startEngineProcess();
+    }
+    else {
+        dialog.updateLabel("You can download the newest version of the engine. "
+                           "Would you like to continue?");
+        dialog.show();
     }
 
     return a.exec();
