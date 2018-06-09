@@ -55,6 +55,7 @@ public:
     static const QString jsonAdd;
     static const QString jsonReplace;
     static const QString jsonRemove;
+    static const QString jsonTree;
     static const QString jsonScripts;
     static const QString jsonGames;
     static const QString jsonEngineWin;
@@ -106,6 +107,7 @@ public:
     void getVersions(QJsonArray& versions) const;
     bool check();
     bool readDocumentVersion();
+    void readTrees(QString& version);
 
 protected:
     QJsonObject m_document;
@@ -122,6 +124,7 @@ public slots:
 
 signals:
     void progress(int, QString);
+    void progressDescription(QString);
     void finishedCheck(bool);
     void needUpdate();
 };

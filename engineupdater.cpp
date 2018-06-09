@@ -41,6 +41,7 @@ const QString EngineUpdater::jsonOnlyFiles = "onlyFiles";
 const QString EngineUpdater::jsonAdd = "add";
 const QString EngineUpdater::jsonRemove = "remove";
 const QString EngineUpdater::jsonReplace = "replace";
+const QString EngineUpdater::jsonTree = "tree";
 const QString EngineUpdater::gitRepoEngine = "RPG-Paper-Maker";
 const QString EngineUpdater::gitRepoGame = "Game-Scripts";
 const QString EngineUpdater::gitRepoDependencies = "Dependencies";
@@ -278,6 +279,8 @@ void EngineUpdater::updateVersion(QJsonObject& obj, QString& version) {
     QJsonArray tabReplace =
           obj.contains(jsonReplace) ? obj[jsonReplace].toArray() : QJsonArray();
     QJsonObject objFile;
+    readTrees(version);
+
     for (int i = 0; i < tabAdd.size(); i++) {
         objFile = tabAdd.at(i).toObject();
         download(EngineUpdateFileKind::Add, objFile, version);
@@ -325,13 +328,21 @@ bool EngineUpdater::downloadFile(EngineUpdateFileKind action,
     QString source = obj[jsonSource].toString();
     QString target = obj[jsonTarget].toString();
     QString repo = obj[jsonRepo].toString();
+    bool tree = obj.contains(jsonTree);
 
-    if (action == EngineUpdateFileKind::Add)
-        return addFile(source, target, repo, version, exe);
-    else if (action == EngineUpdateFileKind::Remove)
-        removeFile(target);
-    else if (action == EngineUpdateFileKind::Replace)
-        return replaceFile(source, target, repo, version, exe);
+    if (tree) {
+        QJsonObject objTree = m_document[source].toObject();
+        if (!downloadFolder(action, objTree, version))
+            return false;
+    }
+    else {
+        if (action == EngineUpdateFileKind::Add)
+            return addFile(source, target, repo, version, exe);
+        else if (action == EngineUpdateFileKind::Remove)
+            removeFile(target);
+        else if (action == EngineUpdateFileKind::Replace)
+            return replaceFile(source, target, repo, version, exe);
+    }
 
     return true;
 }
@@ -345,9 +356,10 @@ bool EngineUpdater::addFile(QString& source, QString& target, QString& repo,
     QNetworkAccessManager manager;
     QNetworkReply* reply;
     QEventLoop loop;
+    QString url = pathGitHub + repo + "/" + version + "/" + source;
 
-    reply = manager.get(QNetworkRequest(QUrl(pathGitHub + repo + "/" +
-                                             version + "/" + source)));
+    emit progressDescription("Downloading " + source);
+    reply = manager.get(QNetworkRequest(QUrl(url)));
     QObject::connect(reply, SIGNAL(finished()), &loop, SLOT(quit()));
     loop.exec();
     if (reply->error() != QNetworkReply::NetworkError::NoError) {
@@ -569,11 +581,25 @@ bool EngineUpdater::readDocumentVersion() {
     // -----------
 
     m_lastVersion = doc["lastVersion"].toString();
+    m_lastVersion = "v-0.5.0-beta";
     m_versions = doc["versions"].toArray();
+    readTrees(m_lastVersion);
+
+    return true;
+}
+
+// -------------------------------------------------------
+
+void EngineUpdater::readTrees(QString& version) {
+    QNetworkAccessManager manager;
+    QNetworkReply *reply;
+    QEventLoop loop;
+    QJsonObject doc;
+    QJsonDocument json;
 
     /*
-    reply = manager.get(QNetworkRequest(
-        QUrl(pathGitHub + "RPG-Paper-Maker/master/trees.json")));
+    reply = manager.get(QNetworkRequest(QUrl(pathGitHub + "RPG-Paper-Maker/"
+        + version + "/tree.json")));
 
     QObject::connect(reply, SIGNAL(finished()), &loop, SLOT(quit()));
     loop.exec();
@@ -588,10 +614,6 @@ bool EngineUpdater::readDocumentVersion() {
                              "../RPG-Paper-Maker/trees.json"),
                           json);
     m_document = json.object();
-
-    // -----------
-
-    return true;
 }
 
 // -------------------------------------------------------
