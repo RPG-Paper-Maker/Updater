@@ -66,10 +66,7 @@ const QString EngineUpdater::pathGitHub =
 
 EngineUpdater::EngineUpdater()
 {
-    QDir bin(QDir::currentPath());
-    bin.cdUp();
-    QString path = Common::pathCombine(Common::pathCombine(
-                   bin.absolutePath(), "Engine"), "version.json");
+    QString path = getVersionJson();
     if (QFile(path).exists()) {
         QJsonDocument doc;
         Common::readOtherJSON(path, doc);
@@ -265,6 +262,15 @@ void EngineUpdater::getJSONExeGame(QJsonObject& obj, QString os) {
 
 bool EngineUpdater::hasVersion() const {
     return !m_currentVersion.isEmpty();
+}
+
+// -------------------------------------------------------
+
+QString EngineUpdater::getVersionJson() const {
+    QDir bin(QDir::currentPath());
+    bin.cdUp();
+    return Common::pathCombine(Common::pathCombine(
+           bin.absolutePath(), "Engine"), "version.json");
 }
 
 // -------------------------------------------------------
@@ -698,5 +704,12 @@ void EngineUpdater::update() {
     emit progress(90, "Downloading executables for games and engine...");
     downloadExecutables();
     emit progress(100, "Finished!");
+
+    QString path = getVersionJson();
+    if (QFile(path).exists()) {
+        QJsonObject doc;
+        doc["v"] = m_lastVersion;
+        Common::writeOtherJSON(path, doc);
+    }
     QThread::sleep(1);
 }

@@ -85,6 +85,7 @@ public:
     static void getJSONExeEngine(QJsonObject &obj, QString os);
     static void getJSONExeGame(QJsonObject &obj, QString os);
     bool hasVersion() const;
+    QString getVersionJson() const;
     void start();
     void updateVersion(QJsonObject& obj, QString &version);
     bool download(EngineUpdateFileKind action, QJsonObject& obj,
