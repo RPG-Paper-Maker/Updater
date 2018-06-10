@@ -84,6 +84,10 @@ EngineUpdater::~EngineUpdater()
 
 QString EngineUpdater::messageError() const { return m_messageError; }
 
+bool EngineUpdater::hasUpdaterExpired() const {
+    return m_updaterVersion != EngineUpdater::VERSION;
+}
+
 // -------------------------------------------------------
 //
 //  INTERMEDIARY FUNCTIONS
@@ -559,7 +563,6 @@ bool EngineUpdater::readDocumentVersion() {
     QJsonObject doc;
 
     // Get the JSON
-    /*
     reply = manager.get(QNetworkRequest(
         QUrl(pathGitHub + "RPG-Paper-Maker/master/versions.json")));
 
@@ -569,35 +572,33 @@ bool EngineUpdater::readDocumentVersion() {
         return false;
     }
     doc = QJsonDocument::fromJson(reply->readAll()).object();
-    */
-
+    /*
     QJsonDocument json;
     Common::readOtherJSON(Common::pathCombine(
                              QDir::currentPath(),
                              "../RPG-Paper-Maker/versions.json"),
                           json);
     doc = json.object();
+    */
 
     // -----------
 
     m_lastVersion = doc["lastVersion"].toString();
-    m_lastVersion = "v-0.5.0-beta";
+    m_updaterVersion = doc["uversion"].toString();
     m_versions = doc["versions"].toArray();
-    readTrees(m_lastVersion);
 
     return true;
 }
 
 // -------------------------------------------------------
 
-void EngineUpdater::readTrees(QString& version) {
+bool EngineUpdater::readTrees(QString& version) {
     QNetworkAccessManager manager;
     QNetworkReply *reply;
     QEventLoop loop;
     QJsonObject doc;
     QJsonDocument json;
 
-    /*
     reply = manager.get(QNetworkRequest(QUrl(pathGitHub + "RPG-Paper-Maker/"
         + version + "/tree.json")));
 
@@ -607,13 +608,14 @@ void EngineUpdater::readTrees(QString& version) {
         return false;
     }
     m_document = QJsonDocument::fromJson(reply->readAll()).object();
-    */
-
+    /*
     Common::readOtherJSON(Common::pathCombine(
                              QDir::currentPath(),
                              "../RPG-Paper-Maker/trees.json"),
                           json);
-    m_document = json.object();
+    m_document = json.object();*/
+
+    return true;
 }
 
 // -------------------------------------------------------
@@ -628,6 +630,8 @@ void EngineUpdater::downloadEngine() {
 
     // Executables
     emit progress(0, "Creating content folder...");
+    if (!readTrees(m_lastVersion))
+        return;
     dir.mkdir("../Engine");
     obj = m_document[jsonContent].toObject();
     if (!downloadFolder(EngineUpdateFileKind::Add, obj, m_lastVersion))

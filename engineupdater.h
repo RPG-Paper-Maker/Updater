@@ -41,6 +41,7 @@ public:
     EngineUpdater();
     virtual ~EngineUpdater();
     QString messageError() const;
+    bool hasUpdaterExpired() const;
 
     static const QString VERSION;
     static const QString jsonFiles;
@@ -107,7 +108,7 @@ public:
     void getVersions(QJsonArray& versions) const;
     bool check();
     bool readDocumentVersion();
-    void readTrees(QString& version);
+    bool readTrees(QString& version);
 
 protected:
     QJsonObject m_document;

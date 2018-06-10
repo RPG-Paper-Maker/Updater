@@ -21,16 +21,8 @@
 #include "engineupdater.h"
 #include "dialogprogress.h"
 #include <QApplication>
-#include <QThread>
-#include <QTimer>
 #include <QMessageBox>
 #include <QDir>
-
-/*
-#include "common.h"
-#include <QDir>
-#include <QJsonDocument>
-*/
 
 int main(int argc, char *argv[])
 {
@@ -47,24 +39,35 @@ int main(int argc, char *argv[])
 
     EngineUpdater engineUpdater;
     DialogEngineUpdate dialog(engineUpdater);
-    engineUpdater.readDocumentVersion();
+
+    if (!engineUpdater.readDocumentVersion())
+        EngineUpdater::startEngineProcess();
 
     //engineUpdater.writeTrees();
 
-    if (engineUpdater.hasVersion()) {
-        if (EngineUpdater::isNeedUpdate() && engineUpdater.check()) {
-            QJsonArray tab;
-            engineUpdater.getVersions(tab);
-            dialog.updateReleaseText(tab);
-            dialog.show();
-        }
-        else
-            EngineUpdater::startEngineProcess();
+    if (engineUpdater.hasUpdaterExpired()) {
+        QMessageBox::warning(nullptr, "Your engine updater has expired.",
+                             "Your engine updater has expired. Pleae download "
+                             "the newest version in our official website: "
+                             "http://rpg-paper-maker.com");
+        return 0;
     }
     else {
-        dialog.updateLabel("You can download the newest version of the engine. "
-                           "Would you like to continue?");
-        dialog.show();
+        if (engineUpdater.hasVersion()) {
+            if (EngineUpdater::isNeedUpdate() && engineUpdater.check()) {
+                QJsonArray tab;
+                engineUpdater.getVersions(tab);
+                dialog.updateReleaseText(tab);
+                dialog.show();
+            }
+            else
+                EngineUpdater::startEngineProcess();
+        }
+        else {
+            dialog.updateLabel("You can download the newest version of the "
+                               "engine. Would you like to continue?");
+            dialog.show();
+        }
     }
 
     return a.exec();

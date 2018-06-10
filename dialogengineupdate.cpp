@@ -91,6 +91,8 @@ void DialogEngineUpdate::accept() {
     QDialog::accept();
 }
 
+// -------------------------------------------------------
+
 void DialogEngineUpdate::reject() {
     this->hide();
     EngineUpdater::startEngineProcess();
