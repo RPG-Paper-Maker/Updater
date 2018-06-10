@@ -92,9 +92,7 @@ bool EngineUpdater::hasUpdaterExpired() const {
 // -------------------------------------------------------
 
 void EngineUpdater::startEngineProcess() {
-    QDir bin(QDir::currentPath());
-    bin.cdUp();
-    QString path = Common::pathCombine(bin.absolutePath(), "Engine");
+    QString path = Common::pathCombine(QDir::currentPath(), "Engine");
     QString exe;
     #ifdef Q_OS_WIN
         exe = "RPG Paper Maker.exe";
@@ -112,10 +110,8 @@ void EngineUpdater::startEngineProcess() {
 // -------------------------------------------------------
 
 bool EngineUpdater::isNeedUpdate() {
-    QDir bin(QDir::currentPath());
-    bin.cdUp();
     QString path = Common::pathCombine(Common::pathCombine(Common::pathCombine(
-                   bin.absolutePath(), "Engine"), "Content"),
+                   QDir::currentPath(), "Engine"), "Content"),
                    "engineSettings.json");
     QJsonDocument doc;
     Common::readOtherJSON(path, doc);
@@ -130,14 +126,14 @@ void EngineUpdater::writeTrees() {
     QJsonObject objScripts, objGame, objEngineWin, objEngineLinux, objEngineMac,
                 objContent, objBR, objEngineExe, objGameExe, obj, objTemp;
     writeTree("Content/Datas/Scripts/System", gitRepoGame,
-              "../Engine/Content/basic/Content/Datas/Scripts/System/",
+              "Engine/Content/basic/Content/Datas/Scripts/System/",
               objScripts);
-    writeTree("Game", gitRepoDependencies, "../Engine/Content/", objGame);
-    writeTree("Engine/win32", gitRepoDependencies, "../Engine/", objEngineWin);
-    writeTree("Engine/linux", gitRepoDependencies, "../Engine/", objEngineLinux);
-    writeTree("Engine/osx", gitRepoDependencies, "../Engine/", objEngineMac);
-    writeTree("Content", gitRepoEngine, "../Engine/Content/", objContent);
-    writeTree("Content", gitRepoBR, "../Engine/Content/basic/Content", objBR);
+    writeTree("Game", gitRepoDependencies, "Engine/Content/", objGame);
+    writeTree("Engine/win32", gitRepoDependencies, "Engine/", objEngineWin);
+    writeTree("Engine/linux", gitRepoDependencies, "Engine/", objEngineLinux);
+    writeTree("Engine/osx", gitRepoDependencies, "Engine/", objEngineMac);
+    writeTree("Content", gitRepoEngine, "Engine/Content/", objContent);
+    writeTree("Content", gitRepoBR, "Engine/Content/basic/Content", objBR);
 
     // Exes
     getJSONExeEngine(objTemp, "win32");
@@ -267,10 +263,8 @@ bool EngineUpdater::hasVersion() const {
 // -------------------------------------------------------
 
 QString EngineUpdater::getVersionJson() const {
-    QDir bin(QDir::currentPath());
-    bin.cdUp();
     return Common::pathCombine(Common::pathCombine(
-           bin.absolutePath(), "Engine"), "version.json");
+           QDir::currentPath(), "Engine"), "version.json");
 }
 
 // -------------------------------------------------------
@@ -606,11 +600,12 @@ bool EngineUpdater::readTrees(QString& version) {
     QJsonDocument json;
 
     reply = manager.get(QNetworkRequest(QUrl(pathGitHub + "RPG-Paper-Maker/"
-        + version + "/tree.json")));
+        + version + "/trees.json")));
 
     QObject::connect(reply, SIGNAL(finished()), &loop, SLOT(quit()));
     loop.exec();
     if (reply->error() != QNetworkReply::NetworkError::NoError) {
+        m_messageError = "Could not read trees.json.";
         return false;
     }
     m_document = QJsonDocument::fromJson(reply->readAll()).object();
@@ -649,7 +644,7 @@ void EngineUpdater::downloadEngine() {
     emit progress(0, "Creating content folder...");
     if (!readTrees(m_lastVersion))
         return;
-    dir.mkdir("../Engine");
+    dir.mkdir("Engine");
     obj = m_document[jsonContent].toObject();
     if (!downloadFolder(EngineUpdateFileKind::Add, obj, m_lastVersion))
         return;
@@ -657,9 +652,9 @@ void EngineUpdater::downloadEngine() {
     if (!downloadScripts())
         return;
     emit progress(10, "Downloading System scripts...");
-    dir.mkdir("../Engine/Content/basic/Content/Datas/Scripts");
-    dir.mkdir("../Engine/Content/basic/Content/Datas/Scripts/Plugins");
-    QFile include("../Engine/Content/basic/Content/Datas/Scripts/Plugins/"
+    dir.mkdir("Engine/Content/basic/Content/Datas/Scripts");
+    dir.mkdir("Engine/Content/basic/Content/Datas/Scripts/Plugins");
+    QFile include("Engine/Content/basic/Content/Datas/Scripts/Plugins/"
                   "includes.js");
     include.open(QIODevice::WriteOnly);
     include.write("");
