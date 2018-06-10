@@ -110,6 +110,7 @@ public:
     bool check();
     bool readDocumentVersion();
     bool readTrees(QString& version);
+    void writeVersion();
 
 protected:
     QJsonObject m_document;

@@ -625,6 +625,17 @@ bool EngineUpdater::readTrees(QString& version) {
 }
 
 // -------------------------------------------------------
+
+void EngineUpdater::writeVersion() {
+    QString path = getVersionJson();
+    if (QFile(path).exists()) {
+        QJsonObject doc;
+        doc["v"] = m_lastVersion;
+        Common::writeOtherJSON(path, doc);
+    }
+}
+
+// -------------------------------------------------------
 //
 //  SLOTS
 //
@@ -670,10 +681,8 @@ void EngineUpdater::downloadEngine() {
     #endif
     if (!downloadFolder(EngineUpdateFileKind::Add, obj, m_lastVersion))
         return;
-    QFile("../RPG-Paper-Maker").remove();
-    QFile::link("../Engine/RPG-Paper-Maker", "../RPG-Paper-Maker");
-
-    emit progress(100, "Downloading all the system scripts...");
+    writeVersion();
+    emit progress(100, "Finished!");
     QThread::sleep(1);
 }
 
@@ -703,13 +712,7 @@ void EngineUpdater::update() {
     // System scripts
     emit progress(90, "Downloading executables for games and engine...");
     downloadExecutables();
+    writeVersion();
     emit progress(100, "Finished!");
-
-    QString path = getVersionJson();
-    if (QFile(path).exists()) {
-        QJsonObject doc;
-        doc["v"] = m_lastVersion;
-        Common::writeOtherJSON(path, doc);
-    }
     QThread::sleep(1);
 }
