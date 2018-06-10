@@ -42,6 +42,10 @@ DialogEngineUpdate::DialogEngineUpdate(EngineUpdater &engineUpdater,
                        &m_progress, SLOT(setValueLabel(int, QString)));
     m_progress.connect(&m_engineUpdater, SIGNAL(progressDescription(QString)),
                        &m_progress, SLOT(setDescription(QString)));
+    m_progress.connect(&m_engineUpdater, SIGNAL(setCount(int)),
+                       &m_progress, SLOT(setCount(int)));
+    m_progress.connect(&m_engineUpdater, SIGNAL(addOne()),
+                       &m_progress, SLOT(addOne()));
 }
 
 DialogEngineUpdate::~DialogEngineUpdate()

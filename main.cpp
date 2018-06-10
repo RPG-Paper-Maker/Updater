@@ -40,8 +40,10 @@ int main(int argc, char *argv[])
     EngineUpdater engineUpdater;
     DialogEngineUpdate dialog(engineUpdater);
 
-    if (!engineUpdater.readDocumentVersion())
+    if (!engineUpdater.readDocumentVersion()) {
         EngineUpdater::startEngineProcess();
+        return 0;
+    }
 
     //engineUpdater.writeTrees();
 

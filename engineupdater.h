@@ -53,6 +53,7 @@ public:
     static const QString jsonLinux;
     static const QString jsonMac;
     static const QString jsonOnlyFiles;
+    static const QString jsonExe;
     static const QString jsonAdd;
     static const QString jsonReplace;
     static const QString jsonRemove;
@@ -84,6 +85,9 @@ public:
     static void getJSONDir(QJsonObject &obj, QJsonArray& files, QString target);
     static void getJSONExeEngine(QJsonObject &obj, QString os);
     static void getJSONExeGame(QJsonObject &obj, QString os);
+    static int countObjJson(QJsonObject& obj);
+    static int countArrayJson(QJsonArray& files);
+    static int countObjUpdate(QJsonObject& obj);
     bool hasVersion() const;
     QString getVersionJson() const;
     void start();
@@ -91,7 +95,7 @@ public:
     bool download(EngineUpdateFileKind action, QJsonObject& obj,
                   QString& version);
     bool downloadFile(EngineUpdateFileKind action, QJsonObject& obj,
-                      QString &version, bool exe = false);
+                      QString &version);
     bool addFile(QString& source, QString& target, QString &repo,
                  QString &version, bool exe);
     void removeFile(QString& target);
@@ -128,6 +132,8 @@ public slots:
 signals:
     void progress(int, QString);
     void progressDescription(QString);
+    void setCount(int);
+    void addOne();
     void finishedCheck(bool);
     void needUpdate();
 };

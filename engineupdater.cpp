@@ -38,6 +38,7 @@ const QString EngineUpdater::jsonWindows = "w";
 const QString EngineUpdater::jsonLinux = "l";
 const QString EngineUpdater::jsonMac = "m";
 const QString EngineUpdater::jsonOnlyFiles = "onlyFiles";
+const QString EngineUpdater::jsonExe = "exe";
 const QString EngineUpdater::jsonAdd = "add";
 const QString EngineUpdater::jsonRemove = "remove";
 const QString EngineUpdater::jsonReplace = "replace";
@@ -133,7 +134,7 @@ void EngineUpdater::writeTrees() {
     writeTree("Engine/linux", gitRepoDependencies, "Engine/", objEngineLinux);
     writeTree("Engine/osx", gitRepoDependencies, "Engine/", objEngineMac);
     writeTree("Content", gitRepoEngine, "Engine/Content/", objContent);
-    writeTree("Content", gitRepoBR, "Engine/Content/basic/Content", objBR);
+    writeTree("Content", gitRepoBR, "Engine/Content/BR/Content", objBR);
 
     // Exes
     getJSONExeEngine(objTemp, "win32");
@@ -188,17 +189,15 @@ void EngineUpdater::getTree(QJsonObject& objTree, QString localUrl,
     while (directories.hasNext()) {
         directories.next();
         QString name = directories.fileName();
-        if (name != "RPG Paper Maker.exe") {
-            QString currentPath = Common::pathCombine(path, name);
-            QString currentTarget = Common::pathCombine(targetUrl, name);
-            QJsonObject obj;
-            if (directories.fileInfo().isDir())
-                getTree(obj, localUrl, currentPath, currentTarget, repo);
-            else {
-                getJSONFile(obj, currentPath, currentTarget, repo);
-            }
-            tabFiles.append(obj);
+        QString currentPath = Common::pathCombine(path, name);
+        QString currentTarget = Common::pathCombine(targetUrl, name);
+        QJsonObject obj;
+        if (directories.fileInfo().isDir())
+            getTree(obj, localUrl, currentPath, currentTarget, repo);
+        else {
+            getJSONFile(obj, currentPath, currentTarget, repo);
         }
+        tabFiles.append(obj);
     }
 
     getJSONDir(objTree, tabFiles, targetUrl);
@@ -212,6 +211,15 @@ void EngineUpdater::getJSONFile(QJsonObject& obj, QString source,
     obj[jsonSource] = source;
     obj[jsonTarget] = target;
     obj[jsonRepo] = repo;
+
+    QString exe = source.split('/').last();
+    if (exe == "run.sh" || exe == "RPG-Paper-Maker" ||
+        exe == "RPG Paper Maker.exe" || exe == "RPG-Paper-Maker.app" ||
+        exe == "Game.sh" || exe == "Game" || exe == "Game.exe" ||
+        exe == "Game.app")
+    {
+        obj[jsonExe] = true;
+    }
 }
 
 // -------------------------------------------------------
@@ -235,8 +243,9 @@ void EngineUpdater::getJSONExeEngine(QJsonObject& obj, QString os) {
     else
         exe = "RPG-Paper-Maker.app";
 
-    getJSONFile(obj, "Engine/" + os + "/" + exe, "../Engine/" +
+    getJSONFile(obj, "Engine/" + os + "/" + exe, "Engine/" +
                 exe, "Dependencies");
+    obj[jsonExe] = true;
 }
 
 // -------------------------------------------------------
@@ -249,8 +258,46 @@ void EngineUpdater::getJSONExeGame(QJsonObject& obj, QString os) {
     else if (os == "osx")
         exe += ".app";
 
-    getJSONFile(obj, "Game/" + os + "/" + exe, "../Engine/Content/" + os + "/" +
+    getJSONFile(obj, "Game/" + os + "/" + exe, "Engine/Content/" + os + "/" +
                 exe, "Dependencies");
+    obj[jsonExe] = true;
+}
+
+// -------------------------------------------------------
+
+int EngineUpdater::countObjJson(QJsonObject& obj) {
+    QJsonArray files = obj[jsonFiles].toArray();
+    return countArrayJson(files);
+}
+
+// -------------------------------------------------------
+
+int EngineUpdater::countArrayJson(QJsonArray& files) {
+    int count = 0, total = files.size();
+    QJsonObject obj;
+
+    for (int i = 0; i < total; i++) {
+        obj = files.at(i).toObject();
+        count += countObjJson(obj);
+    }
+    if (total == 0)
+        count++;
+
+    return count;
+}
+
+// -------------------------------------------------------
+
+int EngineUpdater::countObjUpdate(QJsonObject& obj) {
+    QJsonArray tabAdd =
+          obj.contains(jsonAdd) ? obj[jsonAdd].toArray() : QJsonArray();
+    QJsonArray tabRemove =
+          obj.contains(jsonRemove) ? obj[jsonRemove].toArray() : QJsonArray();
+    QJsonArray tabReplace =
+          obj.contains(jsonReplace) ? obj[jsonReplace].toArray() : QJsonArray();
+
+    return countArrayJson(tabAdd) + countArrayJson(tabRemove) +
+           countArrayJson(tabReplace);
 }
 
 // -------------------------------------------------------
@@ -327,12 +374,13 @@ bool EngineUpdater::download(EngineUpdateFileKind action, QJsonObject& obj,
 // -------------------------------------------------------
 
 bool EngineUpdater::downloadFile(EngineUpdateFileKind action,
-                                 QJsonObject& obj, QString& version, bool exe)
+                                 QJsonObject& obj, QString& version)
 {
     QString source = obj[jsonSource].toString();
     QString target = obj[jsonTarget].toString();
     QString repo = obj[jsonRepo].toString();
     bool tree = obj.contains(jsonTree);
+    bool exe = obj.contains(jsonExe);
 
     if (tree) {
         QJsonObject objTree = m_document[source].toObject();
@@ -384,6 +432,7 @@ bool EngineUpdater::addFile(QString& source, QString& target, QString& repo,
                             QFileDevice::ExeOther);
     }
     file.close();
+    emit addOne();
 
     return true;
 }
@@ -489,12 +538,9 @@ void EngineUpdater::downloadExecutables() {
     QJsonObject objGameWin32 = objGame["win32"].toObject();
     QJsonObject objGameLinux = objGame["linux"].toObject();
     QJsonObject objGameOsx = objGame["osx"].toObject();
-    downloadFile(EngineUpdateFileKind::Replace, objGameWin32, m_lastVersion,
-                 true);
-    downloadFile(EngineUpdateFileKind::Replace, objGameLinux, m_lastVersion,
-                 true);
-    downloadFile(EngineUpdateFileKind::Replace, objGameOsx, m_lastVersion,
-                 true);
+    downloadFile(EngineUpdateFileKind::Replace, objGameWin32, m_lastVersion);
+    downloadFile(EngineUpdateFileKind::Replace, objGameLinux, m_lastVersion);
+    downloadFile(EngineUpdateFileKind::Replace, objGameOsx, m_lastVersion);
 
     // Engine
     QJsonObject objEngine = m_document[jsonEngineExe].toObject();
@@ -508,14 +554,14 @@ void EngineUpdater::downloadExecutables() {
         strOS = "osx";
     #endif
     objEngineExe = objEngine[strOS].toObject();
-    downloadFile(EngineUpdateFileKind::Replace, objEngineExe, m_lastVersion,
-                 true);
+    downloadFile(EngineUpdateFileKind::Replace, objEngineExe, m_lastVersion);
 }
 
 // -------------------------------------------------------
 
 bool EngineUpdater::downloadScripts() {
-    QJsonObject obj = m_document[jsonBR].toObject();
+    QJsonObject obj = m_document[jsonScripts].toObject();
+    emit setCount(countObjJson(obj));
     return downloadFolder(EngineUpdateFileKind::Add, obj, m_lastVersion);
 }
 
@@ -623,11 +669,9 @@ bool EngineUpdater::readTrees(QString& version) {
 
 void EngineUpdater::writeVersion() {
     QString path = getVersionJson();
-    if (QFile(path).exists()) {
-        QJsonObject doc;
-        doc["v"] = m_lastVersion;
-        Common::writeOtherJSON(path, doc);
-    }
+    QJsonObject doc;
+    doc["v"] = m_lastVersion;
+    Common::writeOtherJSON(path, doc);
 }
 
 // -------------------------------------------------------
@@ -641,17 +685,21 @@ void EngineUpdater::downloadEngine() {
     QDir dir;
 
     // Executables
-    emit progress(0, "Creating content folder...");
+    emit progress(5, "Creating content folder...");
+    emit setCount(1);
     if (!readTrees(m_lastVersion))
         return;
     dir.mkdir("Engine");
     obj = m_document[jsonContent].toObject();
     if (!downloadFolder(EngineUpdateFileKind::Add, obj, m_lastVersion))
         return;
-    emit progress(5, "Downloading Basic Ressources...");
-    if (!downloadScripts())
+    emit progress(10, "Downloading Basic Ressources...");
+    dir.mkdir("Engine/Content/BR");
+    obj = m_document[jsonBR].toObject();
+    emit setCount(countObjJson(obj));
+    if (!downloadFolder(EngineUpdateFileKind::Add, obj, m_lastVersion))
         return;
-    emit progress(10, "Downloading System scripts...");
+    emit progress(15, "Downloading System scripts...");
     dir.mkdir("Engine/Content/basic/Content/Datas/Scripts");
     dir.mkdir("Engine/Content/basic/Content/Datas/Scripts/Plugins");
     QFile include("Engine/Content/basic/Content/Datas/Scripts/Plugins/"
@@ -659,14 +707,14 @@ void EngineUpdater::downloadEngine() {
     include.open(QIODevice::WriteOnly);
     include.write("");
     include.close();
-    obj = m_document[jsonScripts].toObject();
-    if (!downloadFolder(EngineUpdateFileKind::Add, obj, m_lastVersion))
+    if (!downloadScripts())
         return;
-    emit progress(15, "Downloading games dependencies...");
+    emit progress(80, "Downloading games dependencies...");
     obj = m_document[jsonGames].toObject();
+    emit setCount(countObjJson(obj));
     if (!downloadFolder(EngineUpdateFileKind::Add, obj, m_lastVersion))
         return;
-    emit progress(80, "Downloading engine dependencies...");
+    emit progress(100, "Downloading engine dependencies...");
     #ifdef Q_OS_WIN
         obj = m_document[jsonEngineWin].toObject();
     #elif __linux__
@@ -674,10 +722,10 @@ void EngineUpdater::downloadEngine() {
     #else
         obj = m_document[jsonEngineMac].toObject();
     #endif
+    emit setCount(countObjJson(obj));
     if (!downloadFolder(EngineUpdateFileKind::Add, obj, m_lastVersion))
         return;
     writeVersion();
-    emit progress(100, "Finished!");
     QThread::sleep(1);
 }
 
@@ -693,7 +741,7 @@ void EngineUpdater::update() {
         for (int i = m_index; i < m_versions.size(); i++) {
             obj = m_versions.at(i).toObject();
             version = obj["v"].toString();
-            emit progress(((i - m_index) * progressVersion),
+            emit progress(((i - m_index + 1) * progressVersion),
                           "Downloading version " + version + "...");
             updateVersion(obj, version);
             QThread::sleep(1);
@@ -701,13 +749,12 @@ void EngineUpdater::update() {
     }
 
     // Executables
-    emit progress(80, "Downloading all the system scripts...");
+    emit progress(90, "Downloading all the system scripts...");
     downloadScripts();
 
     // System scripts
-    emit progress(90, "Downloading executables for games and engine...");
+    emit progress(100, "Downloading executables for games and engine...");
     downloadExecutables();
     writeVersion();
-    emit progress(100, "Finished!");
     QThread::sleep(1);
 }
