@@ -90,6 +90,7 @@ public:
     static int countObjUpdate(QJsonObject& obj);
     bool hasVersion() const;
     QString getVersionJson() const;
+    void changeNeedUpdate(bool checked);
     void start();
     void updateVersion(QJsonObject& obj, QString &version);
     bool download(EngineUpdateFileKind action, QJsonObject& obj,

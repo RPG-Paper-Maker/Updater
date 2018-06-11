@@ -57,6 +57,9 @@ private:
 public slots:
     virtual void accept();
     virtual void reject();
+
+private slots:
+    void on_checkBoxShow_toggled(bool checked);
 };
 
 #endif // DIALOGENGINEUPDATE_H

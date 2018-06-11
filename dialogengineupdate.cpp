@@ -69,7 +69,8 @@ void DialogEngineUpdate::updateReleaseText(QJsonArray& tab) {
 void DialogEngineUpdate::updateLabel(QString label) {
     ui->label->setText(label);
     ui->scrollArea->hide();
-    setFixedSize(geometry().width(), geometry().height() - 300);
+    ui->checkBoxShow->hide();
+    setFixedSize(geometry().width(), geometry().height() - 370);
 }
 
 // -------------------------------------------------------
@@ -90,6 +91,7 @@ void DialogEngineUpdate::accept() {
     else
         QMessageBox::information(this, "Done!", "Download finished correctly!");
     m_progress.close();
+    qApp->quit();
     EngineUpdater::startEngineProcess();
 
     QDialog::accept();
@@ -99,7 +101,14 @@ void DialogEngineUpdate::accept() {
 
 void DialogEngineUpdate::reject() {
     this->hide();
+    qApp->quit();
     EngineUpdater::startEngineProcess();
 
     QDialog::reject();
+}
+
+// -------------------------------------------------------
+
+void DialogEngineUpdate::on_checkBoxShow_toggled(bool checked) {
+    m_engineUpdater.changeNeedUpdate(checked);
 }

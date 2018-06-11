@@ -316,6 +316,19 @@ QString EngineUpdater::getVersionJson() const {
 
 // -------------------------------------------------------
 
+void EngineUpdater::changeNeedUpdate(bool checked) {
+    QString path = Common::pathCombine(Common::pathCombine(Common::pathCombine(
+                   QDir::currentPath(), "Engine"), "Content"),
+                   "engineSettings.json");
+    QJsonDocument doc;
+    Common::readOtherJSON(path, doc);
+    QJsonObject obj = doc.object();
+    obj["updater"] = !checked;
+    Common::writeOtherJSON(path, obj);
+}
+
+// -------------------------------------------------------
+
 void EngineUpdater::start() {
     emit needUpdate();
 }

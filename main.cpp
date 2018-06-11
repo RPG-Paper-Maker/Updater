@@ -23,6 +23,7 @@
 #include <QApplication>
 #include <QMessageBox>
 #include <QDir>
+#include <QTimer>
 
 int main(int argc, char *argv[])
 {
@@ -42,6 +43,7 @@ int main(int argc, char *argv[])
 
     if (!engineUpdater.readDocumentVersion()) {
         EngineUpdater::startEngineProcess();
+        QTimer::singleShot(5000, qApp, SLOT(quit()));
         return 0;
     }
 
@@ -62,8 +64,10 @@ int main(int argc, char *argv[])
                 dialog.updateReleaseText(tab);
                 dialog.show();
             }
-            else
+            else {
                 EngineUpdater::startEngineProcess();
+                QTimer::singleShot(5000, qApp, SLOT(quit()));
+            }
         }
         else {
             dialog.updateLabel("You can download the newest version of the "
