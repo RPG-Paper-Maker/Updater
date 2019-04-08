@@ -46,6 +46,7 @@ DialogEngineUpdate::DialogEngineUpdate(EngineUpdater &engineUpdater,
                        &m_progress, SLOT(setCount(int)));
     m_progress.connect(&m_engineUpdater, SIGNAL(addOne()),
                        &m_progress, SLOT(addOne()));
+    m_progress.connect(&m_engineUpdater, SIGNAL(filesFinished()), this, SLOT(on_downloadCompleted()));
 }
 
 DialogEngineUpdate::~DialogEngineUpdate()
@@ -86,15 +87,6 @@ void DialogEngineUpdate::accept() {
         m_engineUpdater.update();
     else
         m_engineUpdater.downloadEngine();
-    if (!m_engineUpdater.messageError().isEmpty())
-        QMessageBox::critical(this, "Error", m_engineUpdater.messageError());
-    else
-        QMessageBox::information(this, "Done!", "Download finished correctly!");
-    m_progress.close();
-    qApp->quit();
-    EngineUpdater::startEngineProcess();
-
-    QDialog::accept();
 }
 
 // -------------------------------------------------------
@@ -111,4 +103,18 @@ void DialogEngineUpdate::reject() {
 
 void DialogEngineUpdate::on_checkBoxShow_toggled(bool checked) {
     m_engineUpdater.changeNeedUpdate(checked);
+
+    QDialog::accept();
+}
+
+// -------------------------------------------------------
+
+void DialogEngineUpdate::on_downloadCompleted() {
+    if (!m_engineUpdater.messageError().isEmpty())
+        QMessageBox::critical(this, "Error", m_engineUpdater.messageError());
+    else
+        QMessageBox::information(this, "Done!", "Download finished correctly!");
+    m_progress.close();
+    qApp->quit();
+    EngineUpdater::startEngineProcess();
 }

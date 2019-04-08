@@ -28,7 +28,7 @@
 
 // -------------------------------------------------------
 //
-//  CLASS ProjectUpdater
+//  CLASS EngineUpdater
 //
 //  Module used for detecting if the engine needs to be updated
 //
@@ -53,6 +53,7 @@ public:
     static const QString jsonLinux;
     static const QString jsonMac;
     static const QString jsonOnlyFiles;
+    static const QString jsonSymLink;
     static const QString jsonExe;
     static const QString jsonAdd;
     static const QString jsonReplace;
@@ -81,7 +82,7 @@ public:
     static void getTree(QJsonObject& objTree, QString localUrl, QString path,
                         QString targetUrl, QString repo);
     static void getJSONFile(QJsonObject &obj, QString source, QString target,
-                            QString repo);
+                            QString repo, bool link);
     static void getJSONDir(QJsonObject &obj, QJsonArray& files, QString target);
     static void getJSONExeEngine(QJsonObject &obj, QString os);
     static void getJSONExeGame(QJsonObject &obj, QString os);
@@ -98,10 +99,10 @@ public:
     bool downloadFile(EngineUpdateFileKind action, QJsonObject& obj,
                       QString &version);
     bool addFile(QString& source, QString& target, QString &repo,
-                 QString &version, bool exe);
+                 QString &version, bool exe, bool link);
     void removeFile(QString& target);
     bool replaceFile(QString& source, QString& target, QString &repo,
-                     QString &version, bool exe);
+                     QString &version, bool exe, bool link);
     bool downloadFolder(EngineUpdateFileKind action, QJsonObject& obj,
                         QString &version, bool onlyFiles = false);
     bool addFolder(QString& target, QJsonArray& files, QString &version,
@@ -116,8 +117,10 @@ public:
     bool readDocumentVersion();
     bool readTrees(QString& version);
     void writeVersion();
+    void setCurrentCount(int c);
 
 protected:
+    QNetworkAccessManager *m_manager;
     QJsonObject m_document;
     QJsonArray m_versions;
     int m_index;
@@ -125,10 +128,13 @@ protected:
     QString m_lastVersion;
     QString m_updaterVersion;
     QString m_messageError;
+    int m_countFiles;
+    QVector<QPair<QString, QString>> m_links;
 
 public slots:
     void downloadEngine();
     void update();
+    void handleFinished(QNetworkReply *reply);
 
 signals:
     void progress(int, QString);
@@ -137,6 +143,7 @@ signals:
     void addOne();
     void finishedCheck(bool);
     void needUpdate();
+    void filesFinished();
 };
 
 #endif // ENGINEUPDATER_H
