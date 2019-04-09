@@ -10,7 +10,11 @@ QT       += core gui network
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
-TARGET = Updater
+RC_ICONS = icon.ico
+TARGET = RPG-Paper-Maker
+win32{
+    TARGET = "RPG Paper Maker"
+}
 TEMPLATE = app
 
 INCLUDEPATH += \
