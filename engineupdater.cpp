@@ -28,7 +28,7 @@
 #include <QThread>
 #include <QProcess>
 
-const QString EngineUpdater::VERSION = "2.0";
+const QString EngineUpdater::VERSION = "2.1";
 const QString EngineUpdater::jsonFiles = "files";
 const QString EngineUpdater::jsonSource = "source";
 const QString EngineUpdater::jsonTarget = "target";
