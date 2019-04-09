@@ -93,7 +93,7 @@ public:
     QString getVersionJson() const;
     void changeNeedUpdate(bool checked);
     void start();
-    void updateVersion(QJsonObject& obj, QString &version);
+    void updateVersion(QString &version);
     bool download(EngineUpdateFileKind action, QJsonObject& obj,
                   QString& version);
     bool downloadFile(EngineUpdateFileKind action, QJsonObject& obj,
