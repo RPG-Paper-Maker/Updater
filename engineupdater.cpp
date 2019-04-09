@@ -91,6 +91,10 @@ bool EngineUpdater::hasUpdaterExpired() const {
     return m_updaterVersion != EngineUpdater::VERSION;
 }
 
+QString EngineUpdater::lastVersion() const {
+    return m_lastVersion;
+}
+
 // -------------------------------------------------------
 //
 //  INTERMEDIARY FUNCTIONS
@@ -353,7 +357,7 @@ void EngineUpdater::updateVersion(QString& version) {
 
     // Get the JSON
     reply = manager.get(QNetworkRequest(QUrl(pathGitHub +
-        "RPG-Paper-Maker/develop/Versions/" + version + ".json")));
+        "RPG-Paper-Maker/master/Versions/" + version + ".json")));
 
     QObject::connect(reply, SIGNAL(finished()), &loop, SLOT(quit()));
     loop.exec();
@@ -573,9 +577,17 @@ bool EngineUpdater::downloadScripts() {
 
 // -------------------------------------------------------
 
-void EngineUpdater::getVersions(QJsonArray& versions) const {
-    for (int i = m_index; i < m_versions.size(); i++)
-        versions.append(m_versions.at(i));
+void EngineUpdater::getVersions(QJsonArray& versions) {
+    QString version;
+
+    for (int i = m_index; i < m_versions.size(); i++) {
+        version = m_versions.at(i).toString();
+        updateVersion(version);
+        m_document["v"] = version;
+        versions.append(m_document);
+    }
+
+    m_versionsContent = versions;
 }
 
 // -------------------------------------------------------
@@ -615,7 +627,7 @@ bool EngineUpdater::readDocumentVersion() {
 
     // Get the JSON
     reply = manager.get(QNetworkRequest(
-        QUrl(pathGitHub + "RPG-Paper-Maker/develop/versions.json")));
+        QUrl(pathGitHub + "RPG-Paper-Maker/master/versions.json")));
 
     QObject::connect(reply, SIGNAL(finished()), &loop, SLOT(quit()));
     loop.exec();
@@ -673,10 +685,10 @@ bool EngineUpdater::readTrees(QString& version) {
 
 // -------------------------------------------------------
 
-void EngineUpdater::writeVersion() {
+void EngineUpdater::writeVersion(QString& version) {
     QString path = getVersionJson();
     QJsonObject doc;
-    doc["v"] = m_lastVersion;
+    doc["v"] = version;
     Common::writeOtherJSON(path, doc);
 }
 
@@ -686,12 +698,13 @@ void EngineUpdater::writeVersion() {
 //
 // -------------------------------------------------------
 
-void EngineUpdater::downloadEngine() {
+void EngineUpdater::downloadEngine(bool isLastVersion, QString oldVersion) {
     QJsonObject objContent, objBR, objGames, objEngine, objScripts;
     QDir dir;
+    QString version = isLastVersion ? m_lastVersion : oldVersion;
 
     emit progress(0, "Initializing...");
-    readTrees(m_lastVersion);
+    readTrees(version);
 
     // Load obj
     objContent = m_document[jsonContent].toObject();
@@ -708,9 +721,9 @@ void EngineUpdater::downloadEngine() {
 
     emit progress(100, "Downloading...");
     dir.mkdir("Engine");
-    downloadFolder(EngineUpdateFileKind::Add, objContent, m_lastVersion);
+    downloadFolder(EngineUpdateFileKind::Add, objContent, version);
     dir.mkdir("Engine/Content/BR");
-    downloadFolder(EngineUpdateFileKind::Add, objBR, m_lastVersion);
+    downloadFolder(EngineUpdateFileKind::Add, objBR, version);
     dir.mkdir("Engine/Content/basic/Content/Datas/Scripts");
     dir.mkdir("Engine/Content/basic/Content/Datas/Scripts/Plugins");
     QFile include("Engine/Content/basic/Content/Datas/Scripts/Plugins/"
@@ -719,9 +732,9 @@ void EngineUpdater::downloadEngine() {
     include.write("");
     include.close();
     downloadScripts();
-    downloadFolder(EngineUpdateFileKind::Add, objGames, m_lastVersion);
-    downloadFolder(EngineUpdateFileKind::Add, objEngine, m_lastVersion);
-    writeVersion();
+    downloadFolder(EngineUpdateFileKind::Add, objGames, version);
+    downloadFolder(EngineUpdateFileKind::Add, objEngine, version);
+    writeVersion(version);
     setCurrentCount(m_countFiles);
 }
 
@@ -730,8 +743,7 @@ void EngineUpdater::downloadEngine() {
 void EngineUpdater::update() {
     QJsonObject obj;
     QString version;
-    QHash<int, QJsonObject> trees;
-    QHash<int, QJsonObject> versions;
+    QJsonArray trees;
 
     // Updating for each versions
     emit progress(0, "Initializing...");
@@ -739,17 +751,15 @@ void EngineUpdater::update() {
         for (int i = m_index; i < m_versions.size(); i++) {
             version = m_versions.at(i).toString();
             readTrees(version);
-            trees.insert(i, m_document);
-            updateVersion(version);
-            versions.insert(i, m_document);
+            trees.append(m_document);
         }
     }
     emit progress(100, "Downloading version(s)...");
     if (m_index != m_versions.size()) {
         for (int i = m_index; i < m_versions.size(); i++) {
             version = m_versions.at(i).toString();
-            obj = versions.value(i);
-            m_document = trees.value(i);
+            obj = m_versionsContent.at(i - m_index).toObject();
+            m_document = trees.at(i - m_index).toObject();
             QJsonArray tabAdd =
                   obj.contains(jsonAdd) ? obj[jsonAdd].toArray() : QJsonArray();
             QJsonArray tabRemove =
@@ -774,7 +784,7 @@ void EngineUpdater::update() {
     }
     downloadScripts();
     downloadExecutables();
-    writeVersion();
+    writeVersion(version);
     setCurrentCount(m_countFiles);
 }
 
@@ -833,4 +843,12 @@ void EngineUpdater::handleFinished(QNetworkReply *reply) {
 
 void EngineUpdater::setCurrentCount(int c) {
     emit setCount(c);
+}
+
+// -------------------------------------------------------
+
+void EngineUpdater::fillVersionsComboBox(QComboBox *comboBox) {
+    for (int i = m_versions.size() - 2; i >= 0; i--) {
+         comboBox->addItem(m_versions.at(i).toString());
+    }
 }

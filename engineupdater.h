@@ -24,6 +24,7 @@
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QNetworkReply>
+#include <QComboBox>
 #include "engineupdatefilekind.h"
 
 // -------------------------------------------------------
@@ -42,6 +43,7 @@ public:
     virtual ~EngineUpdater();
     QString messageError() const;
     bool hasUpdaterExpired() const;
+    QString lastVersion() const;
 
     static const QString VERSION;
     static const QString jsonFiles;
@@ -112,12 +114,13 @@ public:
                        bool onlyFiles = false);
     void downloadExecutables();
     bool downloadScripts();
-    void getVersions(QJsonArray& versions) const;
+    void getVersions(QJsonArray& versions);
     bool check();
     bool readDocumentVersion();
     bool readTrees(QString& version);
-    void writeVersion();
+    void writeVersion(QString& version);
     void setCurrentCount(int c);
+    void fillVersionsComboBox(QComboBox *comboBox);
 
 protected:
     QNetworkAccessManager *m_manager;
@@ -130,9 +133,10 @@ protected:
     QString m_messageError;
     int m_countFiles;
     QVector<QPair<QString, QString>> m_links;
+    QJsonArray m_versionsContent;
 
 public slots:
-    void downloadEngine();
+    void downloadEngine(bool isLastVersion, QString oldVersion);
     void update();
     void handleFinished(QNetworkReply *reply);
 

@@ -70,8 +70,8 @@ int main(int argc, char *argv[])
             }
         }
         else {
-            dialog.updateLabel("You can download the newest version of the "
-                               "engine. Would you like to continue?");
+            dialog.updateLabel("You can download RPG Paper Maker now. Would you "
+                "like to continue with these options?");
             dialog.show();
         }
     }

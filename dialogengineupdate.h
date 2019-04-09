@@ -43,7 +43,7 @@ class DialogEngineUpdate : public QDialog
 
 public:
     explicit DialogEngineUpdate(EngineUpdater& enginUpdater,
-                                QWidget *parent = 0);
+                                QWidget *parent = nullptr);
     ~DialogEngineUpdate();
     void updateReleaseText(QJsonArray& tab);
     void updateLabel(QString label);
@@ -60,6 +60,7 @@ public slots:
 
 private slots:
     void on_checkBoxShow_toggled(bool checked);
+    void on_radioButtonOld_toggled(bool checked);
     void on_downloadCompleted();
 };
 

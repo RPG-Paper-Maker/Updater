@@ -38,6 +38,8 @@ DialogEngineUpdate::DialogEngineUpdate(EngineUpdater &engineUpdater,
     ui->setupUi(this);
     setFixedSize(geometry().width(), geometry().height());
 
+    ui->groupBoxOptions->hide();
+
     m_progress.connect(&m_engineUpdater, SIGNAL(progress(int, QString)),
                        &m_progress, SLOT(setValueLabel(int, QString)));
     m_progress.connect(&m_engineUpdater, SIGNAL(progressDescription(QString)),
@@ -68,10 +70,15 @@ void DialogEngineUpdate::updateReleaseText(QJsonArray& tab) {
 // -------------------------------------------------------
 
 void DialogEngineUpdate::updateLabel(QString label) {
+    this->setWindowTitle("Install");
+    ui->groupBoxOptions->show();
     ui->label->setText(label);
     ui->scrollArea->hide();
     ui->checkBoxShow->hide();
-    setFixedSize(geometry().width(), geometry().height() - 370);
+    m_engineUpdater.fillVersionsComboBox(ui->comboBox);
+    ui->radioButtonLast->setText("Download last version (" + m_engineUpdater
+        .lastVersion() + ")");
+    setFixedSize(geometry().width(), geometry().height() - 250);
 }
 
 // -------------------------------------------------------
@@ -86,7 +93,8 @@ void DialogEngineUpdate::accept() {
     if (m_update)
         m_engineUpdater.update();
     else
-        m_engineUpdater.downloadEngine();
+        m_engineUpdater.downloadEngine(ui->radioButtonLast->isChecked(), ui
+            ->comboBox->currentText());
 }
 
 // -------------------------------------------------------
@@ -103,8 +111,12 @@ void DialogEngineUpdate::reject() {
 
 void DialogEngineUpdate::on_checkBoxShow_toggled(bool checked) {
     m_engineUpdater.changeNeedUpdate(checked);
+}
 
-    QDialog::accept();
+// -------------------------------------------------------
+
+void DialogEngineUpdate::on_radioButtonOld_toggled(bool checked) {
+    ui->comboBox->setEnabled(checked);
 }
 
 // -------------------------------------------------------
@@ -113,7 +125,8 @@ void DialogEngineUpdate::on_downloadCompleted() {
     if (!m_engineUpdater.messageError().isEmpty())
         QMessageBox::critical(this, "Error", m_engineUpdater.messageError());
     else
-        QMessageBox::information(this, "Done!", "Download finished correctly!");
+        QMessageBox::information(this, "Done!", "Download finished correctly!\n"
+            "The engine will be started automatically after closing that window.");
     m_progress.close();
     qApp->quit();
     EngineUpdater::startEngineProcess();
