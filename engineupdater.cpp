@@ -760,21 +760,21 @@ void EngineUpdater::update() {
             version = m_versions.at(i).toString();
             obj = m_versionsContent.at(i - m_index).toObject();
             m_document = trees.at(i - m_index).toObject();
-            QJsonArray tabAdd =
-                  obj.contains(jsonAdd) ? obj[jsonAdd].toArray() : QJsonArray();
             QJsonArray tabRemove =
                   obj.contains(jsonRemove) ? obj[jsonRemove].toArray() : QJsonArray();
+            QJsonArray tabAdd =
+                  obj.contains(jsonAdd) ? obj[jsonAdd].toArray() : QJsonArray();
             QJsonArray tabReplace =
                   obj.contains(jsonReplace) ? obj[jsonReplace].toArray() : QJsonArray();
             QJsonObject objFile;
 
-            for (int i = 0; i < tabAdd.size(); i++) {
-                objFile = tabAdd.at(i).toObject();
-                download(EngineUpdateFileKind::Add, objFile, version);
-            }
             for (int i = 0; i < tabRemove.size(); i++) {
                 objFile = tabRemove.at(i).toObject();
                 download(EngineUpdateFileKind::Remove, objFile, version);
+            }
+            for (int i = 0; i < tabAdd.size(); i++) {
+                objFile = tabAdd.at(i).toObject();
+                download(EngineUpdateFileKind::Add, objFile, version);
             }
             for (int i = 0; i < tabReplace.size(); i++) {
                 objFile = tabReplace.at(i).toObject();
