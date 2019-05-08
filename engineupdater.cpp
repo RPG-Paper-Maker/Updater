@@ -27,6 +27,7 @@
 #include <QDirIterator>
 #include <QThread>
 #include <QProcess>
+#include <QMutex>
 
 const QString EngineUpdater::VERSION = "2.1";
 const QString EngineUpdater::jsonFiles = "files";
@@ -820,8 +821,10 @@ void EngineUpdater::handleFinished(QNetworkReply *reply) {
         }
         file.close();
     }
-    emit addOne();
+    m_mutex.lock();
     m_countFiles--;
+    emit addOne();
+    m_mutex.unlock();
 
     if (m_countFiles == 0) {
         emit progress(100, "Finishing...");

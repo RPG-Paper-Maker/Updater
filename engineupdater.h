@@ -134,6 +134,7 @@ protected:
     int m_countFiles;
     QVector<QPair<QString, QString>> m_links;
     QJsonArray m_versionsContent;
+    QMutex m_mutex;
 
 public slots:
     void downloadEngine(bool isLastVersion, QString oldVersion);
