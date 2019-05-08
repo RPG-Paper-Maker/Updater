@@ -113,7 +113,7 @@ public:
     bool replaceFolder(QString& target, QJsonArray& files, QString& version,
                        bool onlyFiles = false);
     void downloadExecutables();
-    bool downloadScripts();
+    bool downloadScripts(QString version);
     void getVersions(QJsonArray& versions);
     bool check();
     bool readDocumentVersion();

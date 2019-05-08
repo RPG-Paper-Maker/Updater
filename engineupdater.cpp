@@ -29,7 +29,7 @@
 #include <QProcess>
 #include <QMutex>
 
-const QString EngineUpdater::VERSION = "2.1";
+const QString EngineUpdater::VERSION = "2.2";
 const QString EngineUpdater::jsonFiles = "files";
 const QString EngineUpdater::jsonSource = "source";
 const QString EngineUpdater::jsonTarget = "target";
@@ -358,7 +358,7 @@ void EngineUpdater::updateVersion(QString& version) {
 
     // Get the JSON
     reply = manager.get(QNetworkRequest(QUrl(pathGitHub +
-        "RPG-Paper-Maker/master/Versions/" + version + ".json")));
+        "RPG-Paper-Maker/develop/Versions/" + version + ".json")));
 
     QObject::connect(reply, SIGNAL(finished()), &loop, SLOT(quit()));
     loop.exec();
@@ -571,9 +571,9 @@ void EngineUpdater::downloadExecutables() {
 
 // -------------------------------------------------------
 
-bool EngineUpdater::downloadScripts() {
+bool EngineUpdater::downloadScripts(QString version) {
     QJsonObject obj = m_document[jsonScripts].toObject();
-    return downloadFolder(EngineUpdateFileKind::Add, obj, m_lastVersion);
+    return downloadFolder(EngineUpdateFileKind::Add, obj, version);
 }
 
 // -------------------------------------------------------
@@ -628,7 +628,7 @@ bool EngineUpdater::readDocumentVersion() {
 
     // Get the JSON
     reply = manager.get(QNetworkRequest(
-        QUrl(pathGitHub + "RPG-Paper-Maker/master/versions.json")));
+        QUrl(pathGitHub + "RPG-Paper-Maker/develop/versions.json")));
 
     QObject::connect(reply, SIGNAL(finished()), &loop, SLOT(quit()));
     loop.exec();
@@ -732,7 +732,7 @@ void EngineUpdater::downloadEngine(bool isLastVersion, QString oldVersion) {
     include.open(QIODevice::WriteOnly);
     include.write("");
     include.close();
-    downloadScripts();
+    downloadScripts(version);
     downloadFolder(EngineUpdateFileKind::Add, objGames, version);
     downloadFolder(EngineUpdateFileKind::Add, objEngine, version);
     writeVersion(version);
@@ -783,7 +783,7 @@ void EngineUpdater::update() {
             }
         }
     }
-    downloadScripts();
+    downloadScripts(version);
     downloadExecutables();
     writeVersion(version);
     setCurrentCount(m_countFiles);
