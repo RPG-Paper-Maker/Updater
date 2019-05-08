@@ -358,7 +358,7 @@ void EngineUpdater::updateVersion(QString& version) {
 
     // Get the JSON
     reply = manager.get(QNetworkRequest(QUrl(pathGitHub +
-        "RPG-Paper-Maker/develop/Versions/" + version + ".json")));
+        "RPG-Paper-Maker/master/Versions/" + version + ".json")));
 
     QObject::connect(reply, SIGNAL(finished()), &loop, SLOT(quit()));
     loop.exec();
@@ -628,7 +628,7 @@ bool EngineUpdater::readDocumentVersion() {
 
     // Get the JSON
     reply = manager.get(QNetworkRequest(
-        QUrl(pathGitHub + "RPG-Paper-Maker/develop/versions.json")));
+        QUrl(pathGitHub + "RPG-Paper-Maker/master/versions.json")));
 
     QObject::connect(reply, SIGNAL(finished()), &loop, SLOT(quit()));
     loop.exec();

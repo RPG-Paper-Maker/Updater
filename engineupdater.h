@@ -25,6 +25,7 @@
 #include <QJsonArray>
 #include <QNetworkReply>
 #include <QComboBox>
+#include <QMutex>
 #include "engineupdatefilekind.h"
 
 // -------------------------------------------------------
