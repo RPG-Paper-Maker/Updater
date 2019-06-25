@@ -143,7 +143,7 @@ void EngineUpdater::writeTrees() {
     writeTree("Engine/win32", gitRepoDependencies, "Engine/", objEngineWin);
     writeTree("Engine/linux", gitRepoDependencies, "Engine/", objEngineLinux);
     writeTree("Engine/osx", gitRepoDependencies, "Engine/", objEngineMac);
-    writeTree("Content", gitRepoEngine, "Engine/Content/", objContent);
+    writeTree("EditorApp/Content", gitRepoEngine, "Engine/Content/", objContent);
     writeTree("Content", gitRepoBR, "Engine/Content/BR/Content", objBR);
 
     // Exes

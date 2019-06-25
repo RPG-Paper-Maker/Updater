@@ -18,29 +18,29 @@ win32{
 TEMPLATE = app
 
 INCLUDEPATH += \
-    ../RPG-Paper-Maker/Singletons \
-    ../RPG-Paper-Maker/Enums \
-    ../RPG-Paper-Maker/Dialogs
+    ../RPG-Paper-Maker/Editor/Singletons \
+    ../RPG-Paper-Maker/Editor/Enums \
+    ../RPG-Paper-Maker/Editor/Dialogs
 
 SOURCES += \
     main.cpp \
     dialogengineupdate.cpp \
     widgetreleasenotes.cpp \
     engineupdater.cpp \
-    ../RPG-Paper-Maker/Singletons/common.cpp \
-    ../RPG-Paper-Maker/Dialogs/dialogprogress.cpp
+    ../RPG-Paper-Maker/Editor/Singletons/common.cpp \
+    ../RPG-Paper-Maker/Editor/Dialogs/dialogprogress.cpp
 
 HEADERS += \
     dialogengineupdate.h \
     widgetreleasenotes.h \
     engineupdater.h \
-    ../RPG-Paper-Maker/Singletons/common.h \
-    ../RPG-Paper-Maker/Enums/engineupdatefilekind.h \
-    ../RPG-Paper-Maker/Dialogs/dialogprogress.h
+    ../RPG-Paper-Maker/Editor/Singletons/common.h \
+    ../RPG-Paper-Maker/Editor/Enums/engineupdatefilekind.h \
+    ../RPG-Paper-Maker/Editor/Dialogs/dialogprogress.h
 
 FORMS += \
     dialogengineupdate.ui \
-    ../RPG-Paper-Maker/Dialogs/dialogprogress.ui
+    ../RPG-Paper-Maker/Editor/Dialogs/dialogprogress.ui
 
 #-------------------------------------------------
 # Copy Content directory in build folder
