@@ -71,6 +71,7 @@ public:
     static const QString jsonBR;
     static const QString jsonEngineExe;
     static const QString jsonGameExe;
+    static const QString jsonTranslations;
     static const QString gitRepoEngine;
     static const QString gitRepoGame;
     static const QString gitRepoDependencies;
@@ -122,6 +123,7 @@ public:
     void writeVersion(QString& version);
     void setCurrentCount(int c);
     void fillVersionsComboBox(QComboBox *comboBox);
+    void downloadTranslations(QString version);
 
 protected:
     QNetworkAccessManager *m_manager;

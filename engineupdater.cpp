@@ -45,6 +45,7 @@ const QString EngineUpdater::jsonAdd = "add";
 const QString EngineUpdater::jsonRemove = "remove";
 const QString EngineUpdater::jsonReplace = "replace";
 const QString EngineUpdater::jsonTree = "tree";
+const QString EngineUpdater::jsonTranslations = "translations";
 const QString EngineUpdater::gitRepoEngine = "RPG-Paper-Maker";
 const QString EngineUpdater::gitRepoGame = "Game-Scripts";
 const QString EngineUpdater::gitRepoDependencies = "Dependencies";
@@ -135,7 +136,8 @@ bool EngineUpdater::isNeedUpdate() {
 
 void EngineUpdater::writeTrees() {
     QJsonObject objScripts, objGame, objEngineWin, objEngineLinux, objEngineMac,
-                objContent, objBR, objEngineExe, objGameExe, obj, objTemp;
+        objContent, objBR, objEngineExe, objGameExe, obj, objTemp,
+        objTranslations;
     writeTree("Content/Datas/Scripts/System", gitRepoGame,
               "Engine/Content/basic/Content/Datas/Scripts/System/",
               objScripts);
@@ -145,6 +147,8 @@ void EngineUpdater::writeTrees() {
     writeTree("Engine/osx", gitRepoDependencies, "Engine/", objEngineMac);
     writeTree("EditorApp/Content", gitRepoEngine, "Engine/Content/", objContent);
     writeTree("Content", gitRepoBR, "Engine/Content/BR/Content", objBR);
+    writeTree("EditorApp/Content/translations", gitRepoEngine,
+        "Engine/Content/translations", objTranslations);
 
     // Exes
     getJSONExeEngine(objTemp, "win32");
@@ -170,6 +174,7 @@ void EngineUpdater::writeTrees() {
     obj[jsonBR] = objBR;
     obj[jsonEngineExe] = objEngineExe;
     obj[jsonGameExe] = objGameExe;
+    obj[jsonTranslations] = objTranslations;
     Common::writeOtherJSON("../RPG-Paper-Maker/trees.json", obj,
                            QJsonDocument::Indented);
 }
@@ -785,6 +790,7 @@ void EngineUpdater::update() {
     }
     downloadScripts(version);
     downloadExecutables();
+    downloadTranslations(version);
     writeVersion(version);
     setCurrentCount(m_countFiles);
 }
@@ -856,4 +862,12 @@ void EngineUpdater::fillVersionsComboBox(QComboBox *comboBox) {
     for (int i = m_versions.size() - 2; i >= 0; i--) {
          comboBox->addItem(m_versions.at(i).toString());
     }
+}
+
+// -------------------------------------------------------
+
+void EngineUpdater::downloadTranslations(QString version)
+{
+    QJsonObject objTranslations = m_document[jsonTranslations].toObject();
+    downloadFolder(EngineUpdateFileKind::Replace, objTranslations, version);
 }
