@@ -362,7 +362,7 @@ void EngineUpdater::updateVersion(QString& version) {
 
     // Get the JSON
     reply = manager.get(QNetworkRequest(QUrl(pathGitHub +
-        "RPG-Paper-Maker/master/Versions/" + version + ".json")));
+        "RPG-Paper-Maker/develop/Versions/" + version + ".json")));
 
     QObject::connect(reply, SIGNAL(finished()), &loop, SLOT(quit()));
     loop.exec();
@@ -659,7 +659,7 @@ bool EngineUpdater::readDocumentVersion() {
 
     // Get the JSON
     reply = manager.get(QNetworkRequest(
-        QUrl(pathGitHub + "RPG-Paper-Maker/master/versions.json")));
+        QUrl(pathGitHub + "RPG-Paper-Maker/develop/versions.json")));
 
     QObject::connect(reply, SIGNAL(finished()), &loop, SLOT(quit()));
     loop.exec();
@@ -967,7 +967,7 @@ void EngineUpdater::downloadLargeFiles(QString version)
     if (Common::versionDifferent(version, EngineUpdater::ELECTRON_VERSION) != -1)
     {
         this->downloadLargeFile(version, "Game.exe", "Engine/Content/win32/Game.exe");
-        this->downloadLargeFile(version, "Game", "Engine/Content/win32/Game.exe");
+        this->downloadLargeFile(version, "Game", "Engine/Content/linux/Game");
         this->downloadLargeFile(version, "Electron.Framework", "Engine/Content/osx/Game.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Electron Framework");
     }
 }
