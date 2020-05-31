@@ -897,7 +897,6 @@ void EngineUpdater::handleFinished(QNetworkReply *reply, QFile *file) {
     if (m_countFiles == 0) {
         emit progress(100, "Finishing...");
         emit progressDescription("");
-        #ifdef Q_OS_UNIX
         while (!m_links.isEmpty()) {
             for (int i = m_links.size() - 1; i >= 0; i--) {
                 QPair<QString, QString> pair = m_links.at(i);
@@ -907,7 +906,6 @@ void EngineUpdater::handleFinished(QNetworkReply *reply, QFile *file) {
                 }
             }
         }
-        #endif
         emit filesFinished();
     }
 }
