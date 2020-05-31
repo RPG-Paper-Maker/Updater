@@ -26,6 +26,7 @@
 #include <QNetworkReply>
 #include <QComboBox>
 #include <QMutex>
+#include <QFile>
 #include "engineupdatefilekind.h"
 
 // -------------------------------------------------------
@@ -47,6 +48,7 @@ public:
     QString lastVersion() const;
 
     static const QString VERSION;
+    static const QString ELECTRON_VERSION;
     static const QString jsonFiles;
     static const QString jsonSource;
     static const QString jsonTarget;
@@ -73,7 +75,7 @@ public:
     static const QString jsonGameExe;
     static const QString jsonTranslations;
     static const QString gitRepoEngine;
-    static const QString gitRepoGame;
+    static QString gitRepoGame;
     static const QString gitRepoDependencies;
     static const QString gitRepoBR;
     static const QString pathGitHub;
@@ -102,8 +104,9 @@ public:
                   QString& version);
     bool downloadFile(EngineUpdateFileKind action, QJsonObject& obj,
                       QString &version);
-    bool addFile(QString& source, QString& target, QString &repo,
-                 QString &version, bool exe, bool link);
+    bool addFile(QString source, QString target, QString repo,
+                 QString version, bool exe, bool link);
+    bool addFileURL(QUrl &url, QString source, QString target, bool exe, bool link, QString path);
     void removeFile(QString& target);
     bool replaceFile(QString& source, QString& target, QString &repo,
                      QString &version, bool exe, bool link);
@@ -124,6 +127,8 @@ public:
     void setCurrentCount(int c);
     void fillVersionsComboBox(QComboBox *comboBox);
     void downloadTranslations(QString version);
+    void downloadLargeFiles(QString version);
+    void downloadLargeFile(QString version, QString filename, QString target);
 
 protected:
     QNetworkAccessManager *m_manager;
@@ -134,6 +139,7 @@ protected:
     QString m_lastVersion;
     QString m_updaterVersion;
     QString m_messageError;
+    QString m_focusProgress;
     int m_countFiles;
     QVector<QPair<QString, QString>> m_links;
     QJsonArray m_versionsContent;
@@ -142,7 +148,9 @@ protected:
 public slots:
     void downloadEngine(bool isLastVersion, QString oldVersion);
     void update();
-    void handleFinished(QNetworkReply *reply);
+    void handleReading(QNetworkReply *reply, QFile *file);
+    void handleFinished(QNetworkReply *reply, QFile *file);
+    void onDownloadProgress(QString source, qint64 a, qint64 b);
 
 signals:
     void progress(int, QString);

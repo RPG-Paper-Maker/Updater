@@ -36,6 +36,7 @@ DialogEngineUpdate::DialogEngineUpdate(EngineUpdater &engineUpdater,
     m_update(false)
 {
     ui->setupUi(this);
+
     setFixedSize(geometry().width(), geometry().height());
 
     ui->groupBoxOptions->hide();

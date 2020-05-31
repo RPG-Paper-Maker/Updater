@@ -30,6 +30,7 @@
 #include <QMutex>
 
 const QString EngineUpdater::VERSION = "2.3";
+const QString EngineUpdater::ELECTRON_VERSION = "1.5.3";
 const QString EngineUpdater::jsonFiles = "files";
 const QString EngineUpdater::jsonSource = "source";
 const QString EngineUpdater::jsonTarget = "target";
@@ -47,7 +48,7 @@ const QString EngineUpdater::jsonReplace = "replace";
 const QString EngineUpdater::jsonTree = "tree";
 const QString EngineUpdater::jsonTranslations = "translations";
 const QString EngineUpdater::gitRepoEngine = "RPG-Paper-Maker";
-const QString EngineUpdater::gitRepoGame = "Game-Scripts";
+QString EngineUpdater::gitRepoGame = "Game";
 const QString EngineUpdater::gitRepoDependencies = "Dependencies";
 const QString EngineUpdater::gitRepoBR = "Basic-Ressources";
 const QString EngineUpdater::jsonScripts = "scripts";
@@ -78,8 +79,6 @@ EngineUpdater::EngineUpdater() :
         m_currentVersion = doc.object()["v"].toString();
     }
     m_manager = new QNetworkAccessManager(this);
-    QObject::connect(m_manager, SIGNAL(finished(QNetworkReply*)), this, SLOT(
-        handleFinished(QNetworkReply*)));
 }
 
 EngineUpdater::~EngineUpdater()
@@ -437,19 +436,38 @@ bool EngineUpdater::downloadFile(EngineUpdateFileKind action,
 
 // -------------------------------------------------------
 
-bool EngineUpdater::addFile(QString& source, QString& target, QString& repo,
-                            QString& version, bool exe, bool link)
+bool EngineUpdater::addFile(QString source, QString target, QString repo,
+                            QString version, bool exe, bool link)
 {
     QString path = Common::pathCombine(QDir::currentPath(), target);
-    QString url = pathGitHub + repo + "/" + version + "/" + source;
-    QNetworkReply *reply;
+    QUrl url = QUrl(pathGitHub + repo + "/" + version + "/" + source);
+    return addFileURL(url, source, target, exe, link, path);
+}
 
+// -------------------------------------------------------
+
+bool EngineUpdater::addFileURL(QUrl &url, QString source, QString target,
+                                bool exe, bool link, QString path)
+{
+    QNetworkReply *reply;
     m_countFiles++;
-    reply = m_manager->get(QNetworkRequest(QUrl(url)));
+    QNetworkRequest request = QNetworkRequest(url);
+    reply = m_manager->get(request);
     reply->setProperty("source", source);
+    reply->setProperty("target", target);
     reply->setProperty("path", path);
     reply->setProperty("exe", exe);
     reply->setProperty("link", link);
+    QFile *file = new QFile(path);
+    QObject::connect(reply, &QNetworkReply::readyRead, this, [this, reply, file]() {
+        this->handleReading(reply, file);
+    });
+    QObject::connect(reply, &QNetworkReply::finished, [this, reply, file](){
+        this->handleFinished(reply, file);
+    });
+    QObject::connect(reply, &QNetworkReply::downloadProgress, [this, source](qint64 a, qint64 b){
+        this->onDownloadProgress(source, a, b);
+    });
 
     return true;
 }
@@ -578,7 +596,15 @@ void EngineUpdater::downloadExecutables() {
 
 bool EngineUpdater::downloadScripts(QString version) {
     QJsonObject obj = m_document[jsonScripts].toObject();
-    return downloadFolder(EngineUpdateFileKind::Add, obj, version);
+    bool b = downloadFolder(EngineUpdateFileKind::Add, obj, version);
+    if (Common::versionDifferent(version, EngineUpdater::ELECTRON_VERSION) != -1)
+    {
+        b &= addFile("main.js", "Engine/Content/main.js", gitRepoGame, version, false, false);
+        b &= addFile("index.html", "Engine/Content/index.html", gitRepoGame, version, false, false);
+        b &= addFile("package.json", "Engine/Content/package.json", gitRepoGame, version, false, false);
+    }
+
+    return b;
 }
 
 // -------------------------------------------------------
@@ -740,6 +766,7 @@ void EngineUpdater::downloadEngine(bool isLastVersion, QString oldVersion) {
     downloadScripts(version);
     downloadFolder(EngineUpdateFileKind::Add, objGames, version);
     downloadFolder(EngineUpdateFileKind::Add, objEngine, version);
+    downloadLargeFiles(version);
     writeVersion(version);
     setCurrentCount(m_countFiles);
 }
@@ -797,35 +824,70 @@ void EngineUpdater::update() {
 
 // -------------------------------------------------------
 
-void EngineUpdater::handleFinished(QNetworkReply *reply) {
+void EngineUpdater::handleReading(QNetworkReply *reply, QFile *file)
+{
     QString path = reply->property("path").toString();
     QString source = reply->property("source").toString();
 
-    emit progressDescription("Downloading " + source);
-    if (reply->error() != QNetworkReply::NetworkError::NoError) {
-        m_messageError = "Could not copy from " + source + " to " + path +
-                         ": " + reply->errorString();
-        emit filesFinished();
+    if (!reply->property("link").toBool())
+    {
+        if (!file->isOpen())
+        {
+            file->open(QIODevice::ReadWrite);
+        }
+        file->write(reply->readAll());
+    }
+}
+
+// -------------------------------------------------------
+
+void EngineUpdater::handleFinished(QNetworkReply *reply, QFile *file) {
+    QString path = reply->property("path").toString();
+    QString source = reply->property("source").toString();
+    bool exe = reply->property("exe").toBool();
+    bool link = reply->property("link").toBool();
+
+
+    QUrl possibleRedirectUrl = reply->attribute(QNetworkRequest::RedirectionTargetAttribute).toUrl();
+    if (!possibleRedirectUrl.isEmpty())
+    {
+        QString target = reply->property("target").toString();
+        removeFile(target);
+        m_countFiles--;
+        this->addFileURL(possibleRedirectUrl, source, target, exe, link, path);
         return;
     }
-    if (reply->property("link").toBool()) {
+
+    if (reply->error() != QNetworkReply::NetworkError::NoError) {
+        if (m_messageError.isEmpty())
+        {
+            m_messageError = "Could not copy from " + source + " to " + path +
+                             ": " + reply->errorString();
+            emit filesFinished();
+        }
+        return;
+    }
+    if (link) {
         QDir dir(path);
         dir.cdUp();
         m_links.append(QPair<QString, QString>(Common::pathCombine(dir
             .absolutePath(), reply->readAll()), path));
     } else {
-        QFile file(path);
-        file.open(QIODevice::WriteOnly);
-        file.write(reply->readAll());
+        if (!file->isOpen())
+        {
+            file->open(QIODevice::ReadWrite);
+        }
+        file->write(reply->readAll());
 
         // If exe, change permissions
-        if (reply->property("exe").toBool()) {
-            file.setPermissions(QFileDevice::ReadUser | QFileDevice::WriteUser |
+        if (exe) {
+            file->setPermissions(QFileDevice::ReadUser | QFileDevice::WriteUser |
                                 QFileDevice::ExeUser | QFileDevice::ReadGroup |
                                 QFileDevice::ExeGroup | QFileDevice::ReadOther |
                                 QFileDevice::ExeOther);
         }
-        file.close();
+        file->close();
+        delete file;
     }
     m_mutex.lock();
     m_countFiles--;
@@ -852,6 +914,32 @@ void EngineUpdater::handleFinished(QNetworkReply *reply) {
 
 // -------------------------------------------------------
 
+void EngineUpdater::onDownloadProgress(QString source, qint64 a, qint64 b)
+{
+    if (m_focusProgress.isEmpty())
+    {
+        m_focusProgress = source;
+    }
+    if (m_focusProgress == source)
+    {
+        if (b != 0)
+        {
+            qint64 res = qRound((static_cast<qreal>(a) / b) * 100);
+            if (res > 0)
+            {
+                emit progressDescription("Downloading " + source + " (" + QString
+                    ::number(res) + "%) - " + QString::number(static_cast<qreal>(a) / 1000000, 'f', 2) + "MB / " + QString::number(static_cast<qreal>(b) / 1000000, 'f', 2) + "MB");
+                if (res == 100)
+                {
+                    m_focusProgress = "";
+                }
+            }
+        }
+    }
+}
+
+// -------------------------------------------------------
+
 void EngineUpdater::setCurrentCount(int c) {
     emit setCount(c);
 }
@@ -870,4 +958,27 @@ void EngineUpdater::downloadTranslations(QString version)
 {
     QJsonObject objTranslations = m_document[jsonTranslations].toObject();
     downloadFolder(EngineUpdateFileKind::Replace, objTranslations, version);
+}
+
+// -------------------------------------------------------
+
+void EngineUpdater::downloadLargeFiles(QString version)
+{
+    if (Common::versionDifferent(version, EngineUpdater::ELECTRON_VERSION) != -1)
+    {
+        this->downloadLargeFile(version, "Game.exe", "Engine/Content/win32/Game.exe");
+        this->downloadLargeFile(version, "Game", "Engine/Content/win32/Game.exe");
+        this->downloadLargeFile(version, "Electron.Framework", "Engine/Content/osx/Game.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Electron Framework");
+    }
+}
+
+// -------------------------------------------------------
+
+void EngineUpdater::downloadLargeFile(QString version, QString filename, QString
+    target)
+{
+    QUrl url = QUrl("https://github.com/RPG-Paper-Maker/Dependencies/releases/"
+        "download/" + version + "/" + filename);
+    addFileURL(url, url.toString(), target, true, false, Common::pathCombine(
+        QDir::currentPath(), target));
 }
