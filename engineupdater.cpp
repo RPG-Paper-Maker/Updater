@@ -206,14 +206,22 @@ void EngineUpdater::getTree(QJsonObject& objTree, QString localUrl,
         QString currentPath = Common::pathCombine(path, name);
         QString currentTarget = Common::pathCombine(targetUrl, name);
         QJsonObject obj;
+        bool test = true;
         if (directories.fileInfo().isDir() && !directories.fileInfo().isSymLink())
         {
             getTree(obj, localUrl, currentPath, currentTarget, repo);
         } else {
+            if (directories.fileName() == "Electron Framework" && !directories.fileInfo().isSymLink())
+            {
+                test = false;
+            }
             getJSONFile(obj, currentPath, currentTarget, repo, directories
                 .fileInfo().isSymLink());
         }
-        tabFiles.append(obj);
+        if (test)
+        {
+            tabFiles.append(obj);
+        }
     }
 
     getJSONDir(objTree, tabFiles, targetUrl);
@@ -229,9 +237,9 @@ void EngineUpdater::getJSONFile(QJsonObject& obj, QString source,
     obj[jsonRepo] = repo;
 
     QString exe = source.split('/').last();
-    if (exe == "run.sh" || exe == "RPG-Paper-Maker" ||
+    if ((exe == "run.sh" || exe == "RPG-Paper-Maker" ||
         exe == "RPG Paper Maker.exe" ||
-        exe == "Game.sh" || exe == "Game" || exe == "Game.exe")
+        exe == "Electron Framework" || exe == "Game" || exe == "Game.exe"))
     {
         obj[jsonExe] = true;
     }
@@ -897,15 +905,19 @@ void EngineUpdater::handleFinished(QNetworkReply *reply, QFile *file) {
     if (m_countFiles == 0) {
         emit progress(100, "Finishing...");
         emit progressDescription("");
-        while (!m_links.isEmpty()) {
-            for (int i = m_links.size() - 1; i >= 0; i--) {
-                QPair<QString, QString> pair = m_links.at(i);
-                if (QFile(pair.first).exists() || QDir(pair.first).exists()) {
-                    QFile::link(pair.first, pair.second);
-                    m_links.removeAt(i);
+        #ifdef Q_OS_WIN
+            // ...
+        #else
+            while (!m_links.isEmpty()) {
+                for (int i = m_links.size() - 1; i >= 0; i--) {
+                    QPair<QString, QString> pair = m_links.at(i);
+                    if (QFile(pair.first).exists() || QDir(pair.first).exists()) {
+                        QFile::link(pair.first, pair.second);
+                        m_links.removeAt(i);
+                    }
                 }
             }
-        }
+        #endif
         emit filesFinished();
     }
 }
