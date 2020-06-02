@@ -216,7 +216,7 @@ void EngineUpdater::getTree(QJsonObject& objTree, QString localUrl,
                 test = false;
             }
             getJSONFile(obj, currentPath, currentTarget, repo, directories
-                .fileInfo().isSymLink());
+                .fileInfo().isSymLink(), directories.fileInfo().isDir());
         }
         if (test)
         {
@@ -230,16 +230,18 @@ void EngineUpdater::getTree(QJsonObject& objTree, QString localUrl,
 // -------------------------------------------------------
 
 void EngineUpdater::getJSONFile(QJsonObject& obj, QString source,
-                                QString target, QString repo, bool link)
+                                QString target, QString repo, bool link, bool isDir)
 {
     obj[jsonSource] = source;
     obj[jsonTarget] = target;
     obj[jsonRepo] = repo;
 
     QString exe = source.split('/').last();
-    if ((exe == "run.sh" || exe == "RPG-Paper-Maker" ||
+    QStringList extension = exe.split(".");
+    if (!isDir && ((exe == "run.sh" || exe == "RPG-Paper-Maker" ||
         exe == "RPG Paper Maker.exe" ||
-        exe == "Electron Framework" || exe == "Game" || exe == "Game.exe"))
+        exe == "Electron Framework" || exe == "Game" || exe == "Game.exe") ||
+        extension.size() == 1))
     {
         obj[jsonExe] = true;
     }
@@ -270,7 +272,7 @@ void EngineUpdater::getJSONExeEngine(QJsonObject& obj, QString os) {
         exe = "RPG-Paper-Maker.app/Contents/MacOS/RPG-Paper-Maker";
 
     getJSONFile(obj, "Engine/" + os + "/" + exe, "Engine/" +
-                exe, "Dependencies", false);
+                exe, "Dependencies", false, false);
     obj[jsonExe] = true;
 }
 
@@ -287,7 +289,7 @@ void EngineUpdater::getJSONExeGame(QJsonObject& obj, QString os) {
         exe = "Game.app/Contents/MacOS/Game";
 
     getJSONFile(obj, "Game/" + os + "/" + exe, "Engine/Content/" + os + "/" +
-                exe, "Dependencies", false);
+                exe, "Dependencies", false, false);
     obj[jsonExe] = true;
 }
 
@@ -370,7 +372,7 @@ void EngineUpdater::updateVersion(QString& version) {
 
     // Get the JSON
     reply = manager.get(QNetworkRequest(QUrl(pathGitHub +
-        "RPG-Paper-Maker/develop/Versions/" + version + ".json")));
+        "RPG-Paper-Maker/master/Versions/" + version + ".json")));
 
     QObject::connect(reply, SIGNAL(finished()), &loop, SLOT(quit()));
     loop.exec();
@@ -667,7 +669,7 @@ bool EngineUpdater::readDocumentVersion() {
 
     // Get the JSON
     reply = manager.get(QNetworkRequest(
-        QUrl(pathGitHub + "RPG-Paper-Maker/develop/versions.json")));
+        QUrl(pathGitHub + "RPG-Paper-Maker/master/versions.json")));
 
     QObject::connect(reply, SIGNAL(finished()), &loop, SLOT(quit()));
     loop.exec();

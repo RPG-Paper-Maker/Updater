@@ -88,7 +88,7 @@ public:
     static void getTree(QJsonObject& objTree, QString localUrl, QString path,
                         QString targetUrl, QString repo);
     static void getJSONFile(QJsonObject &obj, QString source, QString target,
-                            QString repo, bool link);
+                            QString repo, bool link, bool isDir);
     static void getJSONDir(QJsonObject &obj, QJsonArray& files, QString target);
     static void getJSONExeEngine(QJsonObject &obj, QString os);
     static void getJSONExeGame(QJsonObject &obj, QString os);
