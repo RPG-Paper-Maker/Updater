@@ -29,7 +29,7 @@
 #include <QProcess>
 #include <QMutex>
 
-const QString EngineUpdater::VERSION = "2.3";
+const QString EngineUpdater::VERSION = "2.4";
 const QString EngineUpdater::ELECTRON_VERSION = "1.5.3";
 const QString EngineUpdater::jsonFiles = "files";
 const QString EngineUpdater::jsonSource = "source";
@@ -48,7 +48,7 @@ const QString EngineUpdater::jsonReplace = "replace";
 const QString EngineUpdater::jsonTree = "tree";
 const QString EngineUpdater::jsonTranslations = "translations";
 const QString EngineUpdater::gitRepoEngine = "RPG-Paper-Maker";
-QString EngineUpdater::gitRepoGame = "Game";
+QString EngineUpdater::gitRepoGame = "Game-Script";
 const QString EngineUpdater::gitRepoDependencies = "Dependencies";
 const QString EngineUpdater::gitRepoBR = "Basic-Ressources";
 const QString EngineUpdater::jsonScripts = "scripts";
@@ -577,17 +577,6 @@ bool EngineUpdater::replaceFolder(QString& target, QJsonArray &files,
 // -------------------------------------------------------
 
 void EngineUpdater::downloadExecutables() {
-
-    // Games
-    QJsonObject objGame = m_document[jsonGameExe].toObject();
-    QJsonObject objGameWin32 = objGame["win32"].toObject();
-    QJsonObject objGameLinux = objGame["linux"].toObject();
-    QJsonObject objGameOsx = objGame["osx"].toObject();
-    downloadFile(EngineUpdateFileKind::Replace, objGameWin32, m_lastVersion);
-    downloadFile(EngineUpdateFileKind::Replace, objGameLinux, m_lastVersion);
-    downloadFile(EngineUpdateFileKind::Replace, objGameOsx, m_lastVersion);
-
-    // Engine
     QJsonObject objEngine = m_document[jsonEngineExe].toObject();
     QJsonObject objEngineExe;
     QString strOS = "";
