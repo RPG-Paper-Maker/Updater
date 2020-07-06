@@ -108,8 +108,8 @@ public:
                  QString version, bool exe, bool link);
     bool addFileURL(QUrl &url, QString source, QString target, bool exe, bool link, QString path);
     void removeFile(QString& target);
-    bool replaceFile(QString& source, QString& target, QString &repo,
-                     QString &version, bool exe, bool link);
+    bool replaceFile(QString source, QString target, QString repo,
+                     QString version, bool exe, bool link);
     bool downloadFolder(EngineUpdateFileKind action, QJsonObject& obj,
                         QString &version, bool onlyFiles = false);
     bool addFolder(QString& target, QJsonArray& files, QString &version,

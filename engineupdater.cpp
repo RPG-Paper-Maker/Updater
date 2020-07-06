@@ -493,8 +493,8 @@ void EngineUpdater::removeFile(QString& target) {
 
 // -------------------------------------------------------
 
-bool EngineUpdater::replaceFile(QString& source, QString& target, QString& repo,
-                                QString& version, bool exe, bool link)
+bool EngineUpdater::replaceFile(QString source, QString target, QString repo,
+                                QString version, bool exe, bool link)
 {
     removeFile(target);
     return addFile(source, target, repo, version, exe, link);
@@ -596,12 +596,12 @@ void EngineUpdater::downloadExecutables() {
 
 bool EngineUpdater::downloadScripts(QString version) {
     QJsonObject obj = m_document[jsonScripts].toObject();
-    bool b = downloadFolder(EngineUpdateFileKind::Add, obj, version);
+    bool b = downloadFolder(EngineUpdateFileKind::Replace, obj, version);
     if (Common::versionDifferent(version, EngineUpdater::ELECTRON_VERSION) != -1)
     {
-        b &= addFile("main.js", "Engine/Content/main.js", gitRepoGame, version, false, false);
-        b &= addFile("index.html", "Engine/Content/index.html", gitRepoGame, version, false, false);
-        b &= addFile("package.json", "Engine/Content/package.json", gitRepoGame, version, false, false);
+        b &= replaceFile("main.js", "Engine/Content/main.js", gitRepoGame, version, false, false);
+        b &= replaceFile("index.html", "Engine/Content/index.html", gitRepoGame, version, false, false);
+        b &= replaceFile("package.json", "Engine/Content/package.json", gitRepoGame, version, false, false);
     }
 
     return b;
