@@ -129,6 +129,7 @@ public:
     void downloadTranslations(QString version);
     void downloadLargeFiles(QString version);
     void downloadLargeFile(QString version, QString filename, QString target);
+    void updateUpdater();
 
 protected:
     QNetworkAccessManager *m_manager;

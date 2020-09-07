@@ -49,14 +49,13 @@ int main(int argc, char *argv[])
 
     //engineUpdater.writeTrees();
 
-    if (engineUpdater.hasUpdaterExpired()) {
-        QMessageBox::warning(nullptr, "Your engine updater has expired.",
-                             "Your engine updater has expired. Pleae download "
-                             "the newest version in our official website: "
-                             "http://rpg-paper-maker.com");
-        return 0;
+    if (engineUpdater.hasUpdaterExpired())
+    {
+        dialog.setToUpgradeUpdater();
+        dialog.show();
     }
-    else {
+    else
+    {
         if (engineUpdater.hasVersion()) {
             if (EngineUpdater::isNeedUpdate() && engineUpdater.check()) {
                 QJsonArray tab;

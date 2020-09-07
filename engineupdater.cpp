@@ -984,3 +984,27 @@ void EngineUpdater::downloadLargeFile(QString version, QString filename, QString
     addFileURL(url, url.toString(), target, true, false, Common::pathCombine(
         QDir::currentPath(), target));
 }
+
+// -------------------------------------------------------
+
+void EngineUpdater::updateUpdater()
+{
+    QString path = QDir::currentPath();
+    QString exe, source;
+    #ifdef Q_OS_WIN
+        exe = "RPG Paper Maker.exe";
+        source = exe;
+    #elif __linux__
+        exe = "RPG-Paper-Maker";
+        source = "RPG-Paper-Maker-linux";
+    #else
+        exe = "RPG-Paper-Maker.app/Contents/MacOS/RPG-Paper-Maker";
+        source = "RPG-Paper-Maker-osx";
+    #endif
+    path = Common::pathCombine(path, exe);
+    QString sourcePath = "https://github.com/RPG-Paper-Maker/Updater/releases"
+        "/download/" + m_updaterVersion + "/" + source;
+    QUrl url(sourcePath);
+    QFile(path).remove();
+    this->addFileURL(url, sourcePath, path, true, false, path);
+}

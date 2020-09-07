@@ -33,7 +33,8 @@ DialogEngineUpdate::DialogEngineUpdate(EngineUpdater &engineUpdater,
     QDialog(parent),
     ui(new Ui::DialogEngineUpdate),
     m_engineUpdater(engineUpdater),
-    m_update(false)
+    m_update(false),
+    m_updateUpdater(false)
 {
     ui->setupUi(this);
 
@@ -83,6 +84,20 @@ void DialogEngineUpdate::updateLabel(QString label) {
 }
 
 // -------------------------------------------------------
+
+void DialogEngineUpdate::setToUpgradeUpdater()
+{
+    this->setWindowTitle("New updater version available!");
+    ui->label->setText("Your engine updater has expired, a new version is "
+        "available.\nWould you like to download it?");
+    ui->groupBoxOptions->hide();
+    ui->scrollArea->hide();
+    ui->checkBoxShow->hide();
+    setFixedSize(geometry().width(), geometry().height() - 300);
+    m_updateUpdater = true;
+}
+
+// -------------------------------------------------------
 //
 //  SLOTS
 //
@@ -93,9 +108,14 @@ void DialogEngineUpdate::accept() {
     m_progress.show();
     if (m_update)
         m_engineUpdater.update();
-    else
+    else if (m_updateUpdater)
+    {
+        m_engineUpdater.updateUpdater();
+    } else
+    {
         m_engineUpdater.downloadEngine(ui->radioButtonLast->isChecked(), ui
             ->comboBox->currentText());
+    }
 }
 
 // -------------------------------------------------------

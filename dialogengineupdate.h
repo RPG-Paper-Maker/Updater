@@ -47,12 +47,14 @@ public:
     ~DialogEngineUpdate();
     void updateReleaseText(QJsonArray& tab);
     void updateLabel(QString label);
+    void setToUpgradeUpdater();
 
 private:
     Ui::DialogEngineUpdate *ui;
     EngineUpdater& m_engineUpdater;
     DialogProgress m_progress;
     bool m_update;
+    bool m_updateUpdater;
 
 public slots:
     virtual void accept();
