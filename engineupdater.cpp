@@ -47,6 +47,7 @@ const QString EngineUpdater::jsonRemove = "remove";
 const QString EngineUpdater::jsonReplace = "replace";
 const QString EngineUpdater::jsonTree = "tree";
 const QString EngineUpdater::jsonTranslations = "translations";
+const QString EngineUpdater::jsonExample = "example";
 const QString EngineUpdater::gitRepoEngine = "RPG-Paper-Maker";
 QString EngineUpdater::gitRepoGame = "Game-Scripts";
 const QString EngineUpdater::gitRepoDependencies = "Dependencies";
@@ -136,7 +137,7 @@ bool EngineUpdater::isNeedUpdate() {
 void EngineUpdater::writeTrees() {
     QJsonObject objScripts, objGame, objEngineWin, objEngineLinux, objEngineMac,
         objContent, objBR, objEngineExe, objGameExe, obj, objTemp,
-        objTranslations;
+        objTranslations, objExample;
     writeTree("Content/Datas/Scripts/System", gitRepoGame,
               "Engine/Content/basic/Content/Datas/Scripts/System/",
               objScripts);
@@ -148,6 +149,8 @@ void EngineUpdater::writeTrees() {
     writeTree("Content", gitRepoBR, "Engine/Content/BR/Content", objBR);
     writeTree("EditorApp/Content/translations", gitRepoEngine,
         "Engine/Content/translations", objTranslations);
+    writeTree("EditorApp/Content/example", gitRepoEngine,
+        "Engine/Content/example", objExample);
 
     // Exes
     getJSONExeEngine(objTemp, "win32");
@@ -174,6 +177,7 @@ void EngineUpdater::writeTrees() {
     obj[jsonEngineExe] = objEngineExe;
     obj[jsonGameExe] = objGameExe;
     obj[jsonTranslations] = objTranslations;
+    obj[jsonExample] = objExample;
     Common::writeOtherJSON("../RPG-Paper-Maker/trees.json", obj,
                            QJsonDocument::Indented);
 }
@@ -818,6 +822,7 @@ void EngineUpdater::update() {
     downloadScripts(version);
     downloadExecutables();
     downloadTranslations(version);
+    downloadExampleProject();
     writeVersion(version);
     setCurrentCount(m_countFiles);
 }
@@ -1007,4 +1012,12 @@ void EngineUpdater::updateUpdater()
     QUrl url(sourcePath);
     QFile(path).remove();
     this->addFileURL(url, sourcePath, path, true, false, path);
+}
+
+// -------------------------------------------------------
+
+void EngineUpdater::downloadExampleProject()
+{
+    QJsonObject objExample = m_document[jsonExample].toObject();
+    downloadFolder(EngineUpdateFileKind::Replace, objExample, m_currentVersion);
 }

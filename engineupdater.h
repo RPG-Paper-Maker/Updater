@@ -74,6 +74,7 @@ public:
     static const QString jsonEngineExe;
     static const QString jsonGameExe;
     static const QString jsonTranslations;
+    static const QString jsonExample;
     static const QString gitRepoEngine;
     static QString gitRepoGame;
     static const QString gitRepoDependencies;
@@ -130,6 +131,7 @@ public:
     void downloadLargeFiles(QString version);
     void downloadLargeFile(QString version, QString filename, QString target);
     void updateUpdater();
+    void downloadExampleProject();
 
 protected:
     QNetworkAccessManager *m_manager;
