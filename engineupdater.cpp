@@ -29,7 +29,7 @@
 #include <QProcess>
 #include <QMutex>
 
-const QString EngineUpdater::VERSION = "2.5";
+const QString EngineUpdater::VERSION = "2.6";
 const QString EngineUpdater::ELECTRON_VERSION = "1.5.3";
 const QString EngineUpdater::jsonFiles = "files";
 const QString EngineUpdater::jsonSource = "source";
