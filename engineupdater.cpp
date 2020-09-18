@@ -1019,5 +1019,5 @@ void EngineUpdater::updateUpdater()
 void EngineUpdater::downloadExampleProject()
 {
     QJsonObject objExample = m_document[jsonExample].toObject();
-    downloadFolder(EngineUpdateFileKind::Replace, objExample, m_currentVersion);
+    downloadFolder(EngineUpdateFileKind::Replace, objExample, m_lastVersion);
 }
