@@ -998,7 +998,7 @@ void EngineUpdater::updateUpdater()
     QString exe, source;
     #ifdef Q_OS_WIN
         exe = "RPG Paper Maker.exe";
-        source = exe;
+        source = "RPG-Paper-Maker-win.exe";
     #elif __linux__
         exe = "RPG-Paper-Maker";
         source = "RPG-Paper-Maker-linux";
