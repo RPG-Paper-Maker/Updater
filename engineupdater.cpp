@@ -875,8 +875,7 @@ void EngineUpdater::handleFinished(QNetworkReply *reply, QFile *file) {
     if (link) {
         QDir dir(path);
         dir.cdUp();
-        m_links.append(QPair<QString, QString>(Common::pathCombine(dir
-            .absolutePath(), reply->readAll()), path));
+        m_links.append(QPair<QString, QString>(reply->readAll(), path));
     } else {
         if (!file->isOpen())
         {
@@ -908,8 +907,8 @@ void EngineUpdater::handleFinished(QNetworkReply *reply, QFile *file) {
             while (!m_links.isEmpty()) {
                 for (int i = m_links.size() - 1; i >= 0; i--) {
                     QPair<QString, QString> pair = m_links.at(i);
-                    if (QFile(pair.first).exists() || QDir(pair.first).exists()) {
-                        QFile::link(pair.first, pair.second);
+                    QFile::link(pair.first, pair.second);
+                    if (QFile(pair.second).exists() || QDir(pair.second).exists()) {
                         m_links.removeAt(i);
                     }
                 }
