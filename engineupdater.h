@@ -144,9 +144,11 @@ protected:
     QString m_messageError;
     QString m_focusProgress;
     int m_countFiles;
+    int m_totalFiles;
     QVector<QPair<QString, QString>> m_links;
     QJsonArray m_versionsContent;
     QMutex m_mutex;
+    QStringList m_missingStr;
 
 public slots:
     void downloadEngine(bool isLastVersion, QString oldVersion);

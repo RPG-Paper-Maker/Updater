@@ -28,6 +28,7 @@
 #include <QThread>
 #include <QProcess>
 #include <QMutex>
+#include <QtMath>
 
 const QString EngineUpdater::VERSION = "2.6";
 const QString EngineUpdater::ELECTRON_VERSION = "1.5.3";
@@ -71,7 +72,8 @@ const QString EngineUpdater::pathGitHub =
 // -------------------------------------------------------
 
 EngineUpdater::EngineUpdater() :
-    m_countFiles(0)
+    m_countFiles(0),
+    m_totalFiles(0)
 {
     QString path = getVersionJson();
     if (QFile(path).exists()) {
@@ -377,7 +379,7 @@ void EngineUpdater::updateVersion(QString& version) {
 
     // Get the JSON
     reply = manager.get(QNetworkRequest(QUrl(pathGitHub +
-        "RPG-Paper-Maker/develop/Versions/" + version + ".json")));
+        "RPG-Paper-Maker/master/Versions/" + version + ".json")));
 
     QObject::connect(reply, SIGNAL(finished()), &loop, SLOT(quit()));
     loop.exec();
@@ -465,7 +467,8 @@ bool EngineUpdater::addFileURL(QUrl &url, QString source, QString target,
                                 bool exe, bool link, QString path)
 {
     QNetworkReply *reply;
-    m_countFiles++;
+    m_totalFiles++;
+    m_missingStr << source;
     QNetworkRequest request = QNetworkRequest(url);
     reply = m_manager->get(request);
     reply->setProperty("source", source);
@@ -663,7 +666,7 @@ bool EngineUpdater::readDocumentVersion() {
 
     // Get the JSON
     reply = manager.get(QNetworkRequest(
-        QUrl(pathGitHub + "RPG-Paper-Maker/develop/versions.json")));
+        QUrl(pathGitHub + "RPG-Paper-Maker/master/versions.json")));
 
     QObject::connect(reply, SIGNAL(finished()), &loop, SLOT(quit()));
     loop.exec();
@@ -772,7 +775,7 @@ void EngineUpdater::downloadEngine(bool isLastVersion, QString oldVersion) {
     downloadFolder(EngineUpdateFileKind::Add, objEngine, version);
     downloadLargeFiles(version);
     writeVersion(version);
-    setCurrentCount(m_countFiles);
+    setCurrentCount(m_totalFiles - m_countFiles);
 }
 
 // -------------------------------------------------------
@@ -824,7 +827,7 @@ void EngineUpdater::update() {
     downloadTranslations(version);
     downloadExampleProject();
     writeVersion(version);
-    setCurrentCount(m_countFiles);
+    setCurrentCount(m_totalFiles - m_countFiles);
 }
 
 // -------------------------------------------------------
@@ -852,13 +855,23 @@ void EngineUpdater::handleFinished(QNetworkReply *reply, QFile *file) {
     bool exe = reply->property("exe").toBool();
     bool link = reply->property("link").toBool();
 
-
+    if (m_focusProgress == source)
+    {
+        m_focusProgress = "";
+    }
     QUrl possibleRedirectUrl = reply->attribute(QNetworkRequest::RedirectionTargetAttribute).toUrl();
     if (!possibleRedirectUrl.isEmpty())
     {
         QString target = reply->property("target").toString();
         removeFile(target);
-        m_countFiles--;
+        m_countFiles++;
+        m_missingStr.removeOne(source);
+        QFile saveFile("log.txt");
+        if (!saveFile.open(QIODevice::WriteOnly)) {
+            return;
+        }
+        saveFile.write(m_missingStr.join("\n").toUtf8());
+        saveFile.close();
         this->addFileURL(possibleRedirectUrl, source, target, exe, link, path);
         return;
     }
@@ -894,24 +907,43 @@ void EngineUpdater::handleFinished(QNetworkReply *reply, QFile *file) {
         delete file;
     }
     m_mutex.lock();
-    m_countFiles--;
+    m_countFiles++;
+
+    m_missingStr.removeOne(source);
+    QFile saveFile("log.txt");
+    if (!saveFile.open(QIODevice::WriteOnly)) {
+        return;
+    }
+    saveFile.write((QString::number(m_countFiles) + "/" + QString::number(m_totalFiles) + "\n" + m_missingStr.join("\n")).toUtf8());
+    saveFile.close();
+
     emit addOne();
     m_mutex.unlock();
 
-    if (m_countFiles == 0) {
+    if (m_countFiles == m_totalFiles) {
         emit progress(100, "Finishing...");
         emit progressDescription("");
         #ifdef Q_OS_WIN
             // ...
         #else
             while (!m_links.isEmpty()) {
+                QString s;
                 for (int i = m_links.size() - 1; i >= 0; i--) {
                     QPair<QString, QString> pair = m_links.at(i);
                     QFile::link(pair.first, pair.second);
                     if (QFile(pair.second).exists() || QDir(pair.second).exists()) {
                         m_links.removeAt(i);
+                    } else
+                    {
+                        s += pair.first + "; " + pair.second;
                     }
                 }
+                QFile saveFile("log.txt");
+                if (!saveFile.open(QIODevice::WriteOnly)) {
+                    return;
+                }
+                saveFile.write(("links:\n" + s).toUtf8());
+                saveFile.close();
             }
         #endif
         emit filesFinished();
@@ -928,14 +960,14 @@ void EngineUpdater::onDownloadProgress(QString source, qint64 a, qint64 b)
     }
     if (m_focusProgress == source)
     {
-        if (b != 0)
+        if (a != 0 && b != 0)
         {
-            qint64 res = qRound((static_cast<qreal>(a) / b) * 100);
+            qint64 res = qFloor((static_cast<qreal>(a) / b) * 100);
             if (res > 0)
             {
                 emit progressDescription("Downloading " + source + " (" + QString
-                    ::number(res) + "%) - " + QString::number(static_cast<qreal>(a) / 1000000, 'f', 2) + "MB / " + QString::number(static_cast<qreal>(b) / 1000000, 'f', 2) + "MB");
-                if (res == 100)
+                    ::number(res) + "%) - " + QString::number(static_cast<qreal>(a) / 1000000, 'f', 2) + "MB / " + QString::number(static_cast<qreal>(b) / 1000000, 'f', 2) + "MB\nDownloaded files: " + QString::number(m_countFiles) + " / " + QString::number(m_totalFiles));
+                if (a == b)
                 {
                     m_focusProgress = "";
                 }
