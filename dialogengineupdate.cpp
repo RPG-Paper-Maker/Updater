@@ -50,7 +50,6 @@ DialogEngineUpdate::DialogEngineUpdate(EngineUpdater &engineUpdater,
                        &m_progress, SLOT(setCount(int)));
     m_progress.connect(&m_engineUpdater, SIGNAL(addOne()),
                        &m_progress, SLOT(addOne()));
-    m_progress.connect(&m_engineUpdater, SIGNAL(filesFinished()), this, SLOT(on_downloadCompleted()));
 }
 
 DialogEngineUpdate::~DialogEngineUpdate()
@@ -138,17 +137,4 @@ void DialogEngineUpdate::on_checkBoxShow_toggled(bool checked) {
 
 void DialogEngineUpdate::on_radioButtonOld_toggled(bool checked) {
     ui->comboBox->setEnabled(checked);
-}
-
-// -------------------------------------------------------
-
-void DialogEngineUpdate::on_downloadCompleted() {
-    if (!m_engineUpdater.messageError().isEmpty())
-        QMessageBox::critical(this, "Error", m_engineUpdater.messageError());
-    else
-        QMessageBox::information(this, "Done!", "Download finished correctly!\n"
-            "The engine will be started automatically after closing that window.");
-    m_progress.close();
-    qApp->quit();
-    EngineUpdater::startEngineProcess();
 }

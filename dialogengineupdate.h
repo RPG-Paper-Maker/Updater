@@ -63,7 +63,6 @@ public slots:
 private slots:
     void on_checkBoxShow_toggled(bool checked);
     void on_radioButtonOld_toggled(bool checked);
-    void on_downloadCompleted();
 };
 
 #endif // DIALOGENGINEUPDATE_H

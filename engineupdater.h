@@ -132,6 +132,8 @@ public:
     void downloadLargeFile(QString version, QString filename, QString target);
     void updateUpdater();
     void downloadExampleProject();
+    void removeFilesLeftTarget(QString target);
+    void downloadCompleted();
 
 protected:
     QNetworkAccessManager *m_manager;
@@ -148,7 +150,8 @@ protected:
     QVector<QPair<QString, QString>> m_links;
     QJsonArray m_versionsContent;
     QMutex m_mutex;
-    QStringList m_missingStr;
+    QList<QJsonObject> m_filesLeft;
+    QTimer *m_timer;
 
 public slots:
     void downloadEngine(bool isLastVersion, QString oldVersion);
@@ -156,6 +159,7 @@ public slots:
     void handleReading(QNetworkReply *reply, QFile *file);
     void handleFinished(QNetworkReply *reply, QFile *file);
     void onDownloadProgress(QString source, qint64 a, qint64 b);
+    void progressTimer();
 
 signals:
     void progress(int, QString);
@@ -164,7 +168,6 @@ signals:
     void addOne();
     void finishedCheck(bool);
     void needUpdate();
-    void filesFinished();
 };
 
 #endif // ENGINEUPDATER_H

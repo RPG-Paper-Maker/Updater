@@ -29,8 +29,10 @@
 #include <QProcess>
 #include <QMutex>
 #include <QtMath>
+#include <QMessageBox>
+#include <QTimer>
 
-const QString EngineUpdater::VERSION = "2.6";
+const QString EngineUpdater::VERSION = "2.7";
 const QString EngineUpdater::ELECTRON_VERSION = "1.5.3";
 const QString EngineUpdater::jsonFiles = "files";
 const QString EngineUpdater::jsonSource = "source";
@@ -73,7 +75,8 @@ const QString EngineUpdater::pathGitHub =
 
 EngineUpdater::EngineUpdater() :
     m_countFiles(0),
-    m_totalFiles(0)
+    m_totalFiles(0),
+    m_timer(new QTimer(this))
 {
     QString path = getVersionJson();
     if (QFile(path).exists()) {
@@ -82,6 +85,7 @@ EngineUpdater::EngineUpdater() :
         m_currentVersion = doc.object()["v"].toString();
     }
     m_manager = new QNetworkAccessManager(this);
+    connect(m_timer, SIGNAL(timeout()), this, SLOT(progressTimer()));
 }
 
 EngineUpdater::~EngineUpdater()
@@ -468,7 +472,14 @@ bool EngineUpdater::addFileURL(QUrl &url, QString source, QString target,
 {
     QNetworkReply *reply;
     m_totalFiles++;
-    m_missingStr << source;
+    QJsonObject obj;
+    obj["url"] = url.toString();
+    obj["source"] = source;
+    obj["target"] = target;
+    obj["path"] = path;
+    obj["exe"] = exe;
+    obj["link"] = link;
+    m_filesLeft.append(obj);
     QNetworkRequest request = QNetworkRequest(url);
     reply = m_manager->get(request);
     reply->setProperty("source", source);
@@ -774,8 +785,9 @@ void EngineUpdater::downloadEngine(bool isLastVersion, QString oldVersion) {
     downloadFolder(EngineUpdateFileKind::Add, objGames, version);
     downloadFolder(EngineUpdateFileKind::Add, objEngine, version);
     downloadLargeFiles(version);
-    writeVersion(version);
     setCurrentCount(m_totalFiles - m_countFiles);
+    m_currentVersion = version;
+    m_timer->start(20000); // Check files every 20 seconds (if no progress)
 }
 
 // -------------------------------------------------------
@@ -826,8 +838,9 @@ void EngineUpdater::update() {
     downloadExecutables();
     downloadTranslations(version);
     downloadExampleProject();
-    writeVersion(version);
+    m_currentVersion = version;
     setCurrentCount(m_totalFiles - m_countFiles);
+    m_timer->start(20000); // Check files every 20 seconds (if no progress)
 }
 
 // -------------------------------------------------------
@@ -852,6 +865,7 @@ void EngineUpdater::handleReading(QNetworkReply *reply, QFile *file)
 void EngineUpdater::handleFinished(QNetworkReply *reply, QFile *file) {
     QString path = reply->property("path").toString();
     QString source = reply->property("source").toString();
+    QString target = reply->property("target").toString();
     bool exe = reply->property("exe").toBool();
     bool link = reply->property("link").toBool();
 
@@ -862,16 +876,9 @@ void EngineUpdater::handleFinished(QNetworkReply *reply, QFile *file) {
     QUrl possibleRedirectUrl = reply->attribute(QNetworkRequest::RedirectionTargetAttribute).toUrl();
     if (!possibleRedirectUrl.isEmpty())
     {
-        QString target = reply->property("target").toString();
         removeFile(target);
+        this->removeFilesLeftTarget(target);
         m_countFiles++;
-        m_missingStr.removeOne(source);
-        QFile saveFile("log.txt");
-        if (!saveFile.open(QIODevice::WriteOnly)) {
-            return;
-        }
-        saveFile.write(m_missingStr.join("\n").toUtf8());
-        saveFile.close();
         this->addFileURL(possibleRedirectUrl, source, target, exe, link, path);
         return;
     }
@@ -881,7 +888,7 @@ void EngineUpdater::handleFinished(QNetworkReply *reply, QFile *file) {
         {
             m_messageError = "Could not copy from " + source + " to " + path +
                              ": " + reply->errorString();
-            emit filesFinished();
+            this->downloadCompleted();
         }
         return;
     }
@@ -896,7 +903,7 @@ void EngineUpdater::handleFinished(QNetworkReply *reply, QFile *file) {
         }
         file->write(reply->readAll());
 
-        // If exe, change permissions
+        // Change permissions
         if (exe) {
             file->setPermissions(QFileDevice::ReadUser | QFileDevice::WriteUser |
                                 QFileDevice::ExeUser | QFileDevice::ReadGroup |
@@ -908,45 +915,47 @@ void EngineUpdater::handleFinished(QNetworkReply *reply, QFile *file) {
     }
     m_mutex.lock();
     m_countFiles++;
-
-    m_missingStr.removeOne(source);
-    QFile saveFile("log.txt");
-    if (!saveFile.open(QIODevice::WriteOnly)) {
-        return;
-    }
-    saveFile.write((QString::number(m_countFiles) + "/" + QString::number(m_totalFiles) + "\n" + m_missingStr.join("\n")).toUtf8());
-    saveFile.close();
-
+    this->removeFilesLeftTarget(target);
     emit addOne();
     m_mutex.unlock();
 
-    if (m_countFiles == m_totalFiles) {
+    if (m_countFiles == m_totalFiles && m_filesLeft.isEmpty()) {
         emit progress(100, "Finishing...");
         emit progressDescription("");
         #ifdef Q_OS_WIN
             // ...
         #else
+            int sum = m_links.size();
+            QStringList list;
             while (!m_links.isEmpty()) {
-                QString s;
                 for (int i = m_links.size() - 1; i >= 0; i--) {
                     QPair<QString, QString> pair = m_links.at(i);
                     QFile::link(pair.first, pair.second);
                     if (QFile(pair.second).exists() || QDir(pair.second).exists()) {
                         m_links.removeAt(i);
-                    } else
-                    {
-                        s += pair.first + "; " + pair.second;
+                    } else {
+                        list << pair.first + " > " + pair.second;
                     }
                 }
-                QFile saveFile("log.txt");
-                if (!saveFile.open(QIODevice::WriteOnly)) {
+                if (sum == m_links.size()) // Infinite loop
+                {
+                    m_messageError = "Warning! Infinite loop for linking! "
+                        "Please report it to the devs with log.txt.";
+                    QFile saveFile("log.txt");
+                    if (!saveFile.open(QIODevice::WriteOnly)) {
+                       return;
+                    }
+                    saveFile.write(list.join("\n").toUtf8());
+                    saveFile.close();
+                    this->downloadCompleted();
                     return;
+                } else {
+                    sum = m_links.size();
                 }
-                saveFile.write(("links:\n" + s).toUtf8());
-                saveFile.close();
+                list.clear();
             }
         #endif
-        emit filesFinished();
+        this->downloadCompleted();
     }
 }
 
@@ -954,6 +963,7 @@ void EngineUpdater::handleFinished(QNetworkReply *reply, QFile *file) {
 
 void EngineUpdater::onDownloadProgress(QString source, qint64 a, qint64 b)
 {
+    m_timer->start(20000);
     if (m_focusProgress.isEmpty())
     {
         m_focusProgress = source;
@@ -1051,4 +1061,51 @@ void EngineUpdater::downloadExampleProject()
 {
     QJsonObject objExample = m_document[jsonExample].toObject();
     downloadFolder(EngineUpdateFileKind::Replace, objExample, m_lastVersion);
+}
+
+// -------------------------------------------------------
+
+void EngineUpdater::removeFilesLeftTarget(QString target)
+{
+    QJsonObject obj;
+    for (int i = 0, l = m_filesLeft.size(); i < l; i++)
+    {
+        obj = m_filesLeft.at(i);
+        if (obj["target"].toString() == target)
+        {
+            m_filesLeft.removeAt(i);
+            break;
+        }
+    }
+}
+
+// -------------------------------------------------------
+
+void EngineUpdater::downloadCompleted()
+{
+    if (!m_messageError.isEmpty())
+        QMessageBox::critical(nullptr, "Error", m_messageError);
+    else
+    {
+        writeVersion(m_currentVersion);
+        QMessageBox::information(nullptr, "Done!", "Download finished correctly!\n"
+            "The engine will be started automatically after closing that window.");
+    }
+    qApp->quit();
+    EngineUpdater::startEngineProcess();
+}
+
+// -------------------------------------------------------
+
+void EngineUpdater::progressTimer()
+{
+    QJsonObject obj;
+    QUrl url;
+    for (int i = 0, l = m_filesLeft.size(); i < l; i++)
+    {
+        obj = m_filesLeft.at(i);
+        url = QUrl(obj["url"].toString());
+        this->addFileURL(url, obj["source"].toString(), obj["target"].toString(),
+            obj["exe"].toBool(), obj["link"].toBool(), obj["path"].toString());
+    }
 }
