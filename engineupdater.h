@@ -134,6 +134,7 @@ public:
     void downloadExampleProject();
     void removeFilesLeftTarget(QString target);
     void downloadCompleted();
+    void removeOldExe();
 
 protected:
     QNetworkAccessManager *m_manager;

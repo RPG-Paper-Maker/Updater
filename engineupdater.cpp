@@ -86,6 +86,7 @@ EngineUpdater::EngineUpdater() :
     }
     m_manager = new QNetworkAccessManager(this);
     connect(m_timer, SIGNAL(timeout()), this, SLOT(progressTimer()));
+    this->removeOldExe();
 }
 
 EngineUpdater::~EngineUpdater()
@@ -1036,22 +1037,25 @@ void EngineUpdater::downloadLargeFile(QString version, QString filename, QString
 void EngineUpdater::updateUpdater()
 {
     QString path = QDir::currentPath();
-    QString exe, source;
+    QString before, exe, source;
     #ifdef Q_OS_WIN
+        before = "";
         exe = "RPG Paper Maker.exe";
         source = "RPG-Paper-Maker-win.exe";
     #elif __linux__
+        before = "";
         exe = "RPG-Paper-Maker";
         source = "RPG-Paper-Maker-linux";
     #else
-        exe = "RPG-Paper-Maker.app/Contents/MacOS/RPG-Paper-Maker";
+        before = "RPG-Paper-Maker.app/Contents/MacOS";
+        exe = "RPG-Paper-Maker";
         source = "RPG-Paper-Maker-osx";
     #endif
-    path = Common::pathCombine(path, exe);
+    path = Common::pathCombine(Common::pathCombine(path, before), exe);
     QString sourcePath = "https://github.com/RPG-Paper-Maker/Updater/releases"
         "/download/" + m_updaterVersion + "/" + source;
     QUrl url(sourcePath);
-    QFile(path).remove();
+    QFile(path).rename("old-" + exe);
     this->addFileURL(url, sourcePath, path, true, false, path);
 }
 
@@ -1108,4 +1112,24 @@ void EngineUpdater::progressTimer()
         this->addFileURL(url, obj["source"].toString(), obj["target"].toString(),
             obj["exe"].toBool(), obj["link"].toBool(), obj["path"].toString());
     }
+}
+
+// -------------------------------------------------------
+
+void EngineUpdater::removeOldExe()
+{
+    QString path = QDir::currentPath();
+    QString before, exe;
+    #ifdef Q_OS_WIN
+        before = "";
+        exe = "RPG Paper Maker.exe";
+    #elif __linux__
+        before = "";
+        exe = "RPG-Paper-Maker";
+    #else
+        before = "RPG-Paper-Maker.app/Contents/MacOS";
+        exe = "RPG-Paper-Maker";
+    #endif
+    QFile(Common::pathCombine(Common::pathCombine(path, before), "old-" + exe))
+        .remove();
 }
