@@ -32,7 +32,7 @@
 #include <QMessageBox>
 #include <QTimer>
 
-const QString EngineUpdater::VERSION = "2.7";
+const QString EngineUpdater::VERSION = "2.8";
 const QString EngineUpdater::ELECTRON_VERSION = "1.5.3";
 const QString EngineUpdater::jsonFiles = "files";
 const QString EngineUpdater::jsonSource = "source";
