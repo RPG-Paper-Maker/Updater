@@ -145,9 +145,8 @@ void EngineUpdater::writeTrees() {
     QJsonObject objScripts, objGame, objEngineWin, objEngineLinux, objEngineMac,
         objContent, objBR, objEngineExe, objGameExe, obj, objTemp,
         objTranslations, objExample;
-    writeTree("Content/Datas/Scripts/System", gitRepoGame,
-              "Engine/Content/basic/Content/Datas/Scripts/System/",
-              objScripts);
+    writeTree("Content/Datas/Scripts", gitRepoGame,
+              "Engine/Content/basic/Content/Datas/Scripts", objScripts);
     writeTree("Game", gitRepoDependencies, "Engine/Content/", objGame);
     writeTree("Engine/win32", gitRepoDependencies, "Engine/", objEngineWin);
     writeTree("Engine/linux", gitRepoDependencies, "Engine/", objEngineLinux);
