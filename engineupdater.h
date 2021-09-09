@@ -77,6 +77,7 @@ public:
     static const QString jsonExample;
     static const QString gitRepoEngine;
     static QString gitRepoGame;
+    static QString gitRepoGameBuild;
     static const QString gitRepoDependencies;
     static const QString gitRepoBR;
     static const QString pathGitHub;

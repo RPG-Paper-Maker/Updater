@@ -32,7 +32,7 @@
 #include <QMessageBox>
 #include <QTimer>
 
-const QString EngineUpdater::VERSION = "2.8";
+const QString EngineUpdater::VERSION = "2.9";
 const QString EngineUpdater::ELECTRON_VERSION = "1.5.3";
 const QString EngineUpdater::jsonFiles = "files";
 const QString EngineUpdater::jsonSource = "source";
@@ -53,6 +53,7 @@ const QString EngineUpdater::jsonTranslations = "translations";
 const QString EngineUpdater::jsonExample = "example";
 const QString EngineUpdater::gitRepoEngine = "RPG-Paper-Maker";
 QString EngineUpdater::gitRepoGame = "Game-Scripts";
+QString EngineUpdater::gitRepoGameBuild = "Game-Scripts-Build";
 const QString EngineUpdater::gitRepoDependencies = "Dependencies";
 const QString EngineUpdater::gitRepoBR = "Basic-Ressources";
 const QString EngineUpdater::jsonScripts = "scripts";
@@ -145,8 +146,8 @@ void EngineUpdater::writeTrees() {
     QJsonObject objScripts, objGame, objEngineWin, objEngineLinux, objEngineMac,
         objContent, objBR, objEngineExe, objGameExe, obj, objTemp,
         objTranslations, objExample;
-    writeTree("Content/Datas/Scripts", gitRepoGame,
-              "Engine/Content/basic/Content/Datas/Scripts", objScripts);
+    writeTree("", gitRepoGameBuild, "Engine/Content/basic/Content/Datas/Scripts",
+        objScripts);
     writeTree("Game", gitRepoDependencies, "Engine/Content/", objGame);
     writeTree("Engine/win32", gitRepoDependencies, "Engine/", objEngineWin);
     writeTree("Engine/linux", gitRepoDependencies, "Engine/", objEngineLinux);
