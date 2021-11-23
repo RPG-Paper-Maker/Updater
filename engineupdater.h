@@ -49,6 +49,7 @@ public:
 
     static const QString VERSION;
     static const QString ELECTRON_VERSION;
+    static const QString LARGE_FILES_UPDATE_VERSION;
     static const QString jsonFiles;
     static const QString jsonSource;
     static const QString jsonTarget;
@@ -60,6 +61,7 @@ public:
     static const QString jsonOnlyFiles;
     static const QString jsonSymLink;
     static const QString jsonExe;
+    static const QString jsonLarge;
     static const QString jsonAdd;
     static const QString jsonReplace;
     static const QString jsonRemove;
@@ -145,6 +147,7 @@ protected:
     QString m_currentVersion;
     QString m_lastVersion;
     QString m_updaterVersion;
+    QString m_largeVersion;
     QString m_messageError;
     QString m_focusProgress;
     int m_countFiles;

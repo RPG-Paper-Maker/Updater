@@ -32,8 +32,9 @@
 #include <QMessageBox>
 #include <QTimer>
 
-const QString EngineUpdater::VERSION = "2.8";
+const QString EngineUpdater::VERSION = "2.9";
 const QString EngineUpdater::ELECTRON_VERSION = "1.5.3";
+const QString EngineUpdater::LARGE_FILES_UPDATE_VERSION = "1.9.2";
 const QString EngineUpdater::jsonFiles = "files";
 const QString EngineUpdater::jsonSource = "source";
 const QString EngineUpdater::jsonTarget = "target";
@@ -45,6 +46,7 @@ const QString EngineUpdater::jsonMac = "m";
 const QString EngineUpdater::jsonOnlyFiles = "onlyFiles";
 const QString EngineUpdater::jsonSymLink = "sl";
 const QString EngineUpdater::jsonExe = "exe";
+const QString EngineUpdater::jsonLarge = "large";
 const QString EngineUpdater::jsonAdd = "add";
 const QString EngineUpdater::jsonRemove = "remove";
 const QString EngineUpdater::jsonReplace = "replace";
@@ -166,8 +168,10 @@ void EngineUpdater::writeTrees() {
     objEngineExe["linux"] = objTemp;
     getJSONExeEngine(objTemp, "osx");
     objEngineExe["osx"] = objTemp;
-    getJSONExeGame(objTemp, "win32");
-    objGameExe["win32"] = objTemp;
+    getJSONExeGame(objTemp, "winx64");
+    objGameExe["winx64"] = objTemp;
+    getJSONExeGame(objTemp, "winx86");
+    objGameExe["winx86"] = objTemp;
     getJSONExeGame(objTemp, "linux");
     objGameExe["linux"] = objTemp;
     getJSONExeGame(objTemp, "osx");
@@ -217,23 +221,37 @@ void EngineUpdater::getTree(QJsonObject& objTree, QString localUrl,
         QString currentPath = Common::pathCombine(path, name);
         QString currentTarget = Common::pathCombine(targetUrl, name);
         QJsonObject obj;
-        bool test = true;
+        QString large = "";
         if (directories.fileInfo().isDir() && !directories.fileInfo().isSymLink())
         {
             getTree(obj, localUrl, currentPath, currentTarget, repo);
         } else {
             if (directories.fileName() == "Electron Framework" && !directories.fileInfo().isSymLink())
             {
-                test = false;
+                large = "Electron Framework";
             }
             getJSONFile(obj, currentPath, currentTarget, repo, directories
                 .fileInfo().isSymLink(), directories.fileInfo().isDir());
         }
-        if (test && (path != "Game/linux" || (path == "Game/linux" &&
-            directories.fileName() != "Game")))
+        if (!large.isEmpty() || (path == "Game/linux" && directories.fileName() == "Game")
+            || (path == "Game/winx64" && directories.fileName() == "Game.exe") ||
+            (path == "Game/winx86" && directories.fileName() == "Game.exe"))
         {
-            tabFiles.append(obj);
+            if (!large.isEmpty())
+            {
+                obj[jsonLarge] = large;
+            } else if (path == "Game/linux")
+            {
+                obj[jsonLarge] = "Game";
+            } else if (path == "Game/winx64")
+            {
+                obj[jsonLarge] = "Game.exe";
+            } else if (path == "Game/winx86")
+            {
+                obj[jsonLarge] = "Game.exe";
+            }
         }
+        tabFiles.append(obj);
     }
 
     getJSONDir(objTree, tabFiles, targetUrl);
@@ -241,8 +259,8 @@ void EngineUpdater::getTree(QJsonObject& objTree, QString localUrl,
 
 // -------------------------------------------------------
 
-void EngineUpdater::getJSONFile(QJsonObject& obj, QString source,
-                                QString target, QString repo, bool link, bool isDir)
+void EngineUpdater::getJSONFile(QJsonObject& obj, QString source, QString target,
+    QString repo, bool link, bool isDir)
 {
     obj[jsonSource] = source;
     obj[jsonTarget] = target;
@@ -293,7 +311,7 @@ void EngineUpdater::getJSONExeEngine(QJsonObject& obj, QString os) {
 void EngineUpdater::getJSONExeGame(QJsonObject& obj, QString os) {
     QString exe;
 
-    if (os == "win32")
+    if (os == "winx64" || os == "winx86")
         exe = "Game.exe";
     else if (os == "linux")
         exe = "Game";
@@ -438,7 +456,12 @@ bool EngineUpdater::downloadFile(EngineUpdateFileKind action,
     bool tree = obj.contains(jsonTree);
     bool exe = obj.contains(jsonExe);
     bool link = obj.contains(jsonSymLink);
-
+    QString large = obj[jsonLarge].toString();
+    if (!large.isEmpty())
+    {
+        this->downloadLargeFile(m_largeVersion, large, target);
+        return true;
+    }
     if (tree) {
         QJsonObject objTree = m_document[source].toObject();
         if (!downloadFolder(action, objTree, version))
@@ -700,6 +723,7 @@ bool EngineUpdater::readDocumentVersion() {
     m_lastVersion = doc["lastVersion"].toString();
     m_updaterVersion = doc["uversion"].toString();
     m_versions = doc["versions"].toArray();
+    m_largeVersion = doc["largeVersion"].toString();
 
     return true;
 }
@@ -1013,7 +1037,8 @@ void EngineUpdater::downloadTranslations(QString version)
 
 void EngineUpdater::downloadLargeFiles(QString version)
 {
-    if (Common::versionDifferent(version, EngineUpdater::ELECTRON_VERSION) != -1)
+    if (Common::versionDifferent(version, EngineUpdater::ELECTRON_VERSION) != -1 &&
+        Common::versionDifferent(version, EngineUpdater::LARGE_FILES_UPDATE_VERSION) == -1)
     {
         this->downloadLargeFile(EngineUpdater::ELECTRON_VERSION, "Game.exe", "Engine/Content/win32/Game.exe");
         this->downloadLargeFile(EngineUpdater::ELECTRON_VERSION, "Game", "Engine/Content/linux/Game");
