@@ -228,7 +228,7 @@ void EngineUpdater::getTree(QJsonObject& objTree, QString localUrl,
         } else {
             if (directories.fileName() == "Electron Framework" && !directories.fileInfo().isSymLink())
             {
-                large = "Electron Framework";
+                large = "Electron.Framework";
             }
             getJSONFile(obj, currentPath, currentTarget, repo, directories
                 .fileInfo().isSymLink(), directories.fileInfo().isDir());
@@ -245,10 +245,10 @@ void EngineUpdater::getTree(QJsonObject& objTree, QString localUrl,
                 obj[jsonLarge] = "Game";
             } else if (path == "Game/winx64")
             {
-                obj[jsonLarge] = "Game.exe";
+                obj[jsonLarge] = "Gamex64.exe";
             } else if (path == "Game/winx86")
             {
-                obj[jsonLarge] = "Game.exe";
+                obj[jsonLarge] = "Gamex86.exe";
             }
         }
         tabFiles.append(obj);
@@ -402,7 +402,7 @@ void EngineUpdater::updateVersion(QString& version) {
 
     // Get the JSON
     reply = manager.get(QNetworkRequest(QUrl(pathGitHub +
-        "RPG-Paper-Maker/master/Versions/" + version + ".json")));
+        "RPG-Paper-Maker/develop/Versions/" + version + ".json")));
 
     QObject::connect(reply, SIGNAL(finished()), &loop, SLOT(quit()));
     loop.exec();
@@ -701,7 +701,7 @@ bool EngineUpdater::readDocumentVersion() {
 
     // Get the JSON
     reply = manager.get(QNetworkRequest(
-        QUrl(pathGitHub + "RPG-Paper-Maker/master/versions.json")));
+        QUrl(pathGitHub + "RPG-Paper-Maker/develop/versions.json")));
 
     QObject::connect(reply, SIGNAL(finished()), &loop, SLOT(quit()));
     loop.exec();
