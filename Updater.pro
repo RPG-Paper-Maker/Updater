@@ -14,6 +14,7 @@ RC_ICONS = icon.ico
 TARGET = RPG-Paper-Maker
 win32{
     TARGET = "RPG Paper Maker"
+    RC_FILE = "RPG Paper Maker.rc"
 }
 TEMPLATE = app
 

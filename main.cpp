@@ -39,15 +39,14 @@ int main(int argc, char *argv[])
     QDir::setCurrent(bin.absolutePath());
 
     EngineUpdater engineUpdater;
+    //engineUpdater.writeTrees();
     DialogEngineUpdate dialog(engineUpdater);
 
     if (!engineUpdater.readDocumentVersion()) {
         EngineUpdater::startEngineProcess();
         QTimer::singleShot(5000, qApp, SLOT(quit()));
         return 0;
-    }
-
-    //engineUpdater.writeTrees();
+    }    
 
     if (engineUpdater.hasUpdaterExpired())
     {
